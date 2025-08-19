@@ -1,0 +1,15 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+
+@theme {
+  --color-primary: #3B67CE;
+}
+
+* {
+  font-family: "Mulish", sans-serif;
+}
+
+
+
+
