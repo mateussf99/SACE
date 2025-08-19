@@ -1,13 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
 
 @theme {
-  --color-primary: #3B67CE;
+  --color-blue: #333153;
+  --color-secondary: #D8E2F7;
+  --color-blue-light: #3B67CE;
+  --color-focus: #F2F6FE;
+  
 }
 
 * {
-  font-family: "Mulish", sans-serif;
+  font-family: "Roboto", sans-serif;
 }
 
 
