@@ -15,10 +15,6 @@ npm i
 ```
 VITE_API_URL=https://api.example.com (aqui vai o link da api )
 ```
-## Para utilizar imagem direto do google drive
-```
-https://drive.google.com/thumbnail?id=(id  da imagem aqui)
-```
 ## Rodando o projeto local
 abra o terminal e coloque o comando
 ```
