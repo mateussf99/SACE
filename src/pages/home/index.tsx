@@ -1,9 +1,9 @@
-import { Button } from "@/components/ui/button"
+
 
 function index() {
   return (
     <div className="flex min-h-svh flex-col items-center justify-center">
-      <Button variant="secondary" >Click me</Button>
+      index
     </div>
   )
 }
