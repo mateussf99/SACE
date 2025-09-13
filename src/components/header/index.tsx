@@ -40,7 +40,7 @@ function Index() {
         <Link to="/" className="flex-col justify-items-center items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue">SACE</h1>
           <div className="hidden md:block">
-            <p className="font-bold text-[10px]">Sistema de Alerta no Controle de Endemias</p>
+            <p className="text-[11px]">Sistema de Alerta no Controle de Endemias</p>
           </div>
           
         </Link>
@@ -63,7 +63,7 @@ function Index() {
       </div>
       <div className="hidden md:flex p-2 md:w-[256px] md:border-l md:justify-center border-gray-300">
         <Link to="/login">
-            <Button className="md:text-xl bg-gradient-to-r from-blue to-blue-dark text-white shadow-md" variant='default'>
+            <Button className="md:text-2xl md:w-[156px] bg-gradient-to-r from-blue to-blue-dark text-white shadow-md" variant='default'>
               Entrar
             </Button>
         </Link>
