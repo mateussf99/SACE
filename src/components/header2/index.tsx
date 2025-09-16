@@ -25,29 +25,11 @@ function Index() {
     navigate("/login");
   };
 
-  const mobileMenu = (
-    <DropdownMenu>
-      <DropdownMenuTrigger aria-label="Abrir menu">
-        <Menu className="text-blue-dark" />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="font-medium border-none text-blue-dark bg-white">
-        <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
-          <Link to="/">Mapa interativo</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link to="/informacoes">Informações</Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem onSelect={handleLogout}>Sair</DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
 
 
 
   return (
     <header className="flex items-center justify-between bg-white shadow px-3 md:px-4">
-      {/* Esquerda: Logo/título */}
       <div className="flex items-center md:w-[260px] border-r border-gray-300 py-2 pr-4">
         <Link to="/" className="flex flex-col">
           <h1 className="font-bold text-xl md:text-2xl text-blue leading-none">SACE</h1>
