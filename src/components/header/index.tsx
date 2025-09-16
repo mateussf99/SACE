@@ -25,7 +25,7 @@ function Index() {
             <Link to="/informacoes">Informações</Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
-            <Link to="/Login">entrar</Link>
+            <Link to="/login">Entrar</Link>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -53,8 +53,8 @@ function Index() {
                   Mapa interativo
                 </Button>
             </Link>
-            <Link to="/infomacoes">
-                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/infomacoes' ? 'link' : 'outline'}>
+            <Link to="/informacoes">
+                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/informacoes' ? 'link' : 'outline'}>
                   Informações
                 </Button>
             </Link>

@@ -1,18 +1,23 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authService } from "@/services/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
 function index() {
-  const [cpf, setCpf] = useState("")
+  // O backend Flask usa 'username' e 'password'. Vamos usar 'username' aqui.
+  const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const { login } = useAuth()
+  const navigate = useNavigate()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
-    if (!cpf || !password) {
+    if (!username || !password) {
       setError("Por favor, preencha todos os campos")
       return
     }
@@ -20,18 +25,19 @@ function index() {
     setLoading(true)
     setError("")
     
-    // try {
-    //    await authService.login(cpf, password)
-    //   console.log("Login realizado com sucesso:")
-    //   window.location.href = '/parceiros';
-    // } catch (err: any) {
-    //   setError(
-    //     err.response?.data?.message || 
-    //     "Falha ao fazer login. Verifique suas credenciais."
-    //   )
-    // } finally {
-    //   setLoading(false)
-    // }
+    try {
+      const resp = await authService.login(username, password)
+      await login(resp.token, resp.username)
+      navigate('/')
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+        err?.message ||
+        "Falha ao fazer login. Verifique suas credenciais."
+      )
+    } finally {
+      setLoading(false)
+    }
    }
 
   return (
@@ -50,22 +56,22 @@ function index() {
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
               <div className="">
-                <label htmlFor="cpf" className="text-sm font-medium text-primary">
-                  CPF
+                <label htmlFor="username" className="text-sm font-medium ">
+                  Usuário
                 </label>
                 <Input 
-                  id="cpf"
-                  type="string" 
-                  placeholder="111.111.111-11" 
-                  value={cpf}
-                  onChange={(e) => setCpf(e.target.value)}
-                  className="border border-primary rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
+                  id="username"
+                  type="text" 
+                  placeholder="admin" 
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="border rounded-md p-2 focus:border-0  focus:outline-none focus:ring-2 focus:ring-blue"
                   disabled={loading}
                 />
               </div>
               
               <div className="">
-                <label htmlFor="password" className="text-sm font-medium text-primary">
+                <label htmlFor="password" className="text-sm font-medium ">
                   Senha
                 </label>
                 <Input 
@@ -74,7 +80,7 @@ function index() {
                   placeholder="Senha" 
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="border border-primary rounded-md p-2 focus:outline-none focus:ring-0 focus:ring-primary"
+                  className="border rounded-md p-2 focus:border-0 focus:outline-none focus:ring-0 focus:ring-blue"
                   disabled={loading}
                 />
               </div>
