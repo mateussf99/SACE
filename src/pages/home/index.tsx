@@ -1,9 +1,9 @@
-
+import Map from "@/components/map"
 
 function index() {
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center">
-      index
+    <div className="w-full h-svh">
+      <Map className="w-full h-full" />
     </div>
   )
 }

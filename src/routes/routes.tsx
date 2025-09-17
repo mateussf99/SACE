@@ -19,7 +19,7 @@ function AppRoutes() {
                     {isAuthenticated ? <Header2 /> : <Header />}
                 </div>
                 
-                <div className='pt-15 flex-grow'>
+                <div className='pt-10 md:pt-15 flex-grow'>
                     <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/informacoes" element={<Informacoes />} />
