@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Maximize2, Home, Bot, Cog, Car, Trash2, Leaf } from "lucide-react";
+import { Search, Maximize2, Minimize2, Home, Bot, Cog, Car, Trash2, Leaf } from "lucide-react";
 
 // Tipos
 type Tab = "risks" | "deposits";
@@ -24,12 +24,12 @@ function ColorDot({ color }: { color: string }) {
 
 function LineItem({ dot, label, value }: { dot: string; label: string; value: number | string }) {
   return (
-    <div className="flex-col  justify-between gap-3">
+    <div className="flex flex-col items-start gap-1">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <ColorDot color={dot} />
         <span>{label}</span>
       </div>
-      <span className="flex justify-items-center font-semibold tabular-nums">{value}</span>
+      <span className="text-lg font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -113,6 +113,7 @@ function DiseaseStat({
 export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   const [tab, setTab] = useState<Tab>("risks");
   const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
 
   const triggerSearch = () => {
     const q = query.trim();
@@ -135,32 +136,41 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
               onKeyDown={(e) => e.key === "Enter" && triggerSearch()}
               className="pl-9 pr-10 bg-focus border-none"
             />
-            <Button variant="ghost" size="icon" aria-label="Expandir">
-              <Maximize2 className="size-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label={expanded ? "Recolher" : "Expandir"}
+              onClick={() => setExpanded((v) => !v)}
+            >
+              {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
           </div>
 
-          <div className="flex gap-2 bg-secondary rounded-2xl">
-            <Button
-              variant={tab === "risks" ? "dark" : "ghost"}
-              onClick={() => setTab("risks")}
-              className="flex-1 rounded-2xl"
-            >
-              Áreas de risco
-            </Button>
-            <Button
-              variant={tab === "deposits" ? "dark" : "ghost"}
-              onClick={() => setTab("deposits")}
-              className="flex-1 rounded-2xl"
-            >
-              Depósitos
-            </Button>
-          </div>
+          {expanded && (
+            <div className="flex gap-2 bg-secondary rounded-2xl">
+              <Button
+                variant={tab === "risks" ? "dark" : "ghost"}
+                onClick={() => setTab("risks")}
+                className="flex-1 rounded-2xl"
+              >
+                Áreas de risco
+              </Button>
+              <Button
+                variant={tab === "deposits" ? "dark" : "ghost"}
+                onClick={() => setTab("deposits")}
+                className="flex-1 rounded-2xl"
+              >
+                Depósitos
+              </Button>
+            </div>
+          )}
         </CardHeader>
 
-        <CardContent className="space-y-5">
-          {tab === "risks" ? <RisksLegend /> : <DepositsLegend />}
-        </CardContent>
+        {expanded && (
+          <CardContent className="space-y-5">
+            {tab === "risks" ? <RisksLegend /> : <DepositsLegend />}
+          </CardContent>
+        )}
       </Card>
     </div>
   );
