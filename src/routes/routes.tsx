@@ -15,11 +15,11 @@ function AppRoutes() {
         
         <BrowserRouter>
             <div className="flex flex-col min-h-screen">
-                <div className='fixed top-0 left-0 w-full z-10'>
+                <div className='sticky top-0 w-full z-10'>
                     {isAuthenticated ? <Header2 /> : <Header />}
                 </div>
                 
-                <div className='pt-10 md:pt-15 flex-grow'>
+                <div className='flex-grow min-h-0'>
                     <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/informacoes" element={<Informacoes />} />

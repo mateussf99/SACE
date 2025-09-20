@@ -35,7 +35,7 @@ function Index() {
 
 
   return (
-    <div className="flex shadow  bg-white justify-between items-center">
+    <div className="flex shadow bg-white justify-between items-center h-16 md:h-20">
       <div className="flex items-center md:w-[256px] border-r border-gray-300 px-4 py-2">
         <Link to="/" className="flex-col justify-items-center items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue">SACE</h1>
