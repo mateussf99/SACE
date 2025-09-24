@@ -16,18 +16,18 @@ function Index() {
     <>
       <DropdownMenu >
         <DropdownMenuTrigger><Menu className='text-blue-dark'></Menu></DropdownMenuTrigger>
-        <DropdownMenuContent className="font-bold border-none text-blue-dark bg-white" >
-          <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
-            <Link to="/">Mapa interativo</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/informacoes">Informações</Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link to="/login">Entrar</Link>
-          </DropdownMenuItem>
-        </DropdownMenuContent>
+    <DropdownMenuContent className="z-[2000] font-bold border-none text-blue-dark bg-white" >
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link to="/">Mapa interativo</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/informacoes">Informações</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/login">Entrar</Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
       </DropdownMenu>
     </>
   );
@@ -35,7 +35,7 @@ function Index() {
 
 
   return (
-    <div className="flex shadow bg-white justify-between items-center h-16 md:h-20">
+    <div className="flex shadow bg-white justify-between items-center h-14 md:h-16">
       <div className="flex items-center md:w-[256px] border-r border-gray-300 px-4 py-2">
         <Link to="/" className="flex-col justify-items-center items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue">SACE</h1>
@@ -69,7 +69,7 @@ function Index() {
         </Link>
       </div>
       
-      <div className="block md:hidden">{header}</div>
+      <div className="block p-4 md:hidden">{header}</div>
       
     </div>
   );

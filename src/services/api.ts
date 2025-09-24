@@ -27,7 +27,7 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 
-type LoginResponse = { token: string; username: string };
+type LoginResponse = { token: string; username: string; nivel_de_acesso?: string };
 
 const authService = {
   async login(username: string, password: string): Promise<LoginResponse> {

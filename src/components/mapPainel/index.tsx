@@ -124,13 +124,14 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   return (
     <div className={`absolute border-none left-3 top-3 z-[1100] w-[380px] max-w-[92vw] ${className}`}>
       <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
+
         <CardHeader className="gap-3">
           <div className="relative flex items-center gap-2">
             <div className="pointer-events-none absolute left-3 text-muted-foreground">
               <Search className="size-4" />
             </div>
             <Input
-              placeholder="Pesquise por um bairro, cidade ou município."
+              placeholder="Pesquise por um bairro, cidade."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && triggerSearch()}

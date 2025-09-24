@@ -26,8 +26,8 @@ function index() {
     setError("")
     
     try {
-      const resp = await authService.login(username, password)
-      await login(resp.token, resp.username)
+  const resp = await authService.login(username, password)
+  await login(resp.token, resp.username, resp.nivel_de_acesso)
       navigate('/')
     } catch (err: any) {
       setError(
