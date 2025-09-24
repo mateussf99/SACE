@@ -71,6 +71,26 @@ function GeoLayers({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
 export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null }: MapProps) {
   const geo = useUserLocation();
   const [scope, setScope] = useState<'municipio' | 'estado' | null>(null);
+  const [originAddr, setOriginAddr] = useState<{ city?: string; state?: string } | null>(null);
+
+  // Captura endereço (cidade/estado) inicial do usuário quando a geolocalização for obtida
+  useEffect(() => {
+    async function fetchOrigin() {
+      if (!geo.position || originAddr) return;
+      try {
+        const [lat, lon] = geo.position;
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&accept-language=pt-BR`);
+        const data = await resp.json();
+        const addr = data.address || {};
+        const cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet;
+        const stateName = addr.state;
+        setOriginAddr({ city: cityName, state: stateName });
+      } catch {
+        /* ignore */
+      }
+    }
+    fetchOrigin();
+  }, [geo.position, originAddr]);
 
   useEffect(() => {
     if (autoLocateOnLoad) {
@@ -78,6 +98,37 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoLocateOnLoad]);
+
+  // Quando o alvo externo (flyTo) muda, verificar se saiu do município/estado original; se sim, limpar escopo
+  useEffect(() => {
+    let cancelled = false;
+    async function checkBoundary() {
+      if (!flyTo) return;
+      // Se não temos endereço de origem ainda, simplesmente resetar escopo para evitar estado incorreto
+      if (!originAddr) {
+        setScope(null);
+        return;
+      }
+      try {
+        const [lat, lon] = flyTo;
+        const resp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&accept-language=pt-BR`);
+        const data = await resp.json();
+        if (cancelled) return;
+        const addr = data.address || {};
+        const cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet;
+        const stateName = addr.state;
+        const leftCity = originAddr.city && cityName && cityName !== originAddr.city;
+        const leftState = originAddr.state && stateName && stateName !== originAddr.state;
+        if (leftCity || leftState) {
+          setScope(null); // volta botões ao estado "normal"
+        }
+      } catch {
+        // Em erro de geocodificação, não faz nada
+      }
+    }
+    checkBoundary();
+    return () => { cancelled = true; };
+  }, [flyTo, originAddr]);
 
   return (
     <MapContainer
