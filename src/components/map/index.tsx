@@ -2,6 +2,8 @@ import { MapContainer, TileLayer, useMap, Marker, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
+import { Button } from '@/components/ui/button';
+import { X } from 'lucide-react';
 
 // Centro padrão: Maceió, Alagoas
 const DEFAULT_CENTER: [number, number] = [-9.64985, -35.70895];
@@ -52,26 +54,7 @@ function useUserLocation() {
   return { position, accuracy, loading, locate };
 }
 // Subcomponentes usados no Map
-function MapControls({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
-  const map = useMap();
-  const btn = 'bg-white shadow rounded-md px-3 py-2 hover:bg-gray-100 active:scale-95 transition text-xs font-medium';
-
-  const handleLocate = () => {
-    geo.locate((p) => {
-      map.flyTo(p, map.getZoom(), { animate: true, duration: 0.75 });
-    });
-  };
-
-  return (
-    <div className="absolute top-4 right-4 flex flex-col gap-2 z-[1000]">
-      <button aria-label="Mais zoom" className={btn} onClick={() => map.zoomIn()}>+</button>
-      <button aria-label="Menos zoom" className={btn} onClick={() => map.zoomOut()}>-</button>
-      <button aria-label="Localizar usuário" className={btn} onClick={handleLocate} disabled={geo.loading}>
-        {geo.loading ? 'Localizando...' : 'Minha posição'}
-      </button>
-    </div>
-  );
-}
+// (Controles de zoom/localização removidos conforme solicitação)
 
 function GeoLayers({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
   if (!geo.position) return null;
@@ -87,6 +70,7 @@ function GeoLayers({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
 // Componente principal
 export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null }: MapProps) {
   const geo = useUserLocation();
+  const [scope, setScope] = useState<'municipio' | 'estado' | null>(null);
 
   useEffect(() => {
     if (autoLocateOnLoad) {
@@ -109,7 +93,8 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
       />
       <GeoLayers geo={geo} />
-      <MapControls geo={geo} />
+      {/* Controle de escopo (Município / Estado) */}
+      <ScopeController scope={scope} setScope={setScope} geo={geo} />
       {/* Reage a mudanças externas de alvo */}
       <FlyToController target={flyTo} />
     </MapContainer>
@@ -126,4 +111,109 @@ function FlyToController({ target }: { target: [number, number] | null }) {
     }
   }, [target, map]);
   return null;
+}
+
+interface ScopeControllerProps {
+  scope: 'municipio' | 'estado' | null;
+  setScope: React.Dispatch<React.SetStateAction<'municipio' | 'estado' | null>>;
+  geo: ReturnType<typeof useUserLocation>;
+}
+
+function ScopeController({ scope, setScope, geo }: ScopeControllerProps) {
+  const map = useMap();
+  const [loadingTarget, setLoadingTarget] = useState<'municipio' | 'estado' | null>(null);
+
+  async function ensureLocation(): Promise<boolean> {
+    if (geo.position) return true;
+    return new Promise((resolve) => {
+      geo.locate(() => resolve(true));
+      setTimeout(() => resolve(Boolean(geo.position)), 8000);
+    });
+  }
+
+  async function fetchAndFit(target: 'municipio' | 'estado') {
+    if (scope === target) {
+      setScope(null);
+      return;
+    }
+    const hasLoc = await ensureLocation();
+    if (!hasLoc || !geo.position) return;
+    setLoadingTarget(target);
+    try {
+      const [lat, lon] = geo.position;
+      const reverseResp = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}&addressdetails=1&accept-language=pt-BR`);
+      const reverseData = await reverseResp.json();
+      const addr = reverseData.address || {};
+      const cityName = addr.city || addr.town || addr.municipality || addr.village || addr.hamlet;
+      const stateName = addr.state;
+
+      let searchUrl: string | null = null;
+      if (target === 'municipio' && cityName && stateName) {
+        searchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&city=${encodeURIComponent(cityName)}&state=${encodeURIComponent(stateName)}&country=Brazil&accept-language=pt-BR`;
+      } else if (target === 'estado' && stateName) {
+        searchUrl = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&state=${encodeURIComponent(stateName)}&country=Brazil&accept-language=pt-BR`;
+      }
+      if (searchUrl) {
+        const searchResp = await fetch(searchUrl);
+        const searchData = await searchResp.json();
+        const first = searchData[0];
+        if (first?.boundingbox) {
+          const bb = first.boundingbox; // [south, north, west, east]
+          const bounds = L.latLngBounds([
+            [parseFloat(bb[0]), parseFloat(bb[2])],
+            [parseFloat(bb[1]), parseFloat(bb[3])]
+          ]);
+          map.fitBounds(bounds, { padding: [20, 20] });
+        } else {
+          map.flyTo([lat, lon], target === 'estado' ? 7 : 12, { animate: true, duration: 0.75 });
+        }
+      }
+      setScope(target);
+    } catch (e) {
+      console.warn('Falha ao geocodificar:', e);
+    } finally {
+      setLoadingTarget(null);
+    }
+  }
+
+  const baseBtn = 'h-9 px-5 rounded-full text-xs font-medium flex items-center gap-2 shadow transition border';
+  // Mobile: canto superior esquerdo; md+: centralizado no topo
+  const containerPos = 'pointer-events-auto absolute top-3 left-15 md:left-1/2 md:-translate-x-1/2 md:top-4 z-[1200]';
+
+  return (
+    <div className={containerPos}>
+      <div className="flex gap-2">
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => fetchAndFit('municipio')}
+          className={`${baseBtn} ${scope === 'municipio' ? 'bg-[#262649] border-[#262649] text-white hover:bg-[#262649]/90' : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-100'}`}
+          disabled={loadingTarget !== null}
+        >
+          <span>Seu Município</span>
+          {scope === 'municipio' && (
+            <X
+              className="size-3 ml-1 cursor-pointer opacity-80 hover:opacity-100"
+              onClick={(e) => { e.stopPropagation(); setScope(null); }}
+            />
+          )}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={() => fetchAndFit('estado')}
+          className={`${baseBtn} ${scope === 'estado' ? 'bg-[#262649] border-[#262649] text-white hover:bg-[#262649]/90' : 'bg-white border-gray-300 text-gray-800 hover:bg-gray-100'}`}
+          disabled={loadingTarget !== null}
+        >
+          <span>Seu Estado</span>
+          {scope === 'estado' && (
+            <X
+              className="size-3 ml-1 cursor-pointer opacity-80 hover:opacity-100"
+              onClick={(e) => { e.stopPropagation(); setScope(null); }}
+            />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 }
