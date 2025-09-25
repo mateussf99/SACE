@@ -5,6 +5,7 @@ import '../index.css';
 import Home from '../pages/home';
 import Login from '../pages/login';
 import Informacoes from '../pages/informacoes';
+import Teste from '../pages/teste';
 import { useAuth } from '@/contexts/AuthContext';
 
 
@@ -22,6 +23,7 @@ function AppRoutes() {
                 <div className='flex-grow min-h-0'>
                     <Routes>
                             <Route path="/" element={<Home />} />
+                            <Route path="/teste" element={<Teste />} />
                             <Route path="/informacoes" element={<Informacoes />} />
                             <Route
                                 path="/login"
