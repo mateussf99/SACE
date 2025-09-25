@@ -6,6 +6,7 @@ import {
   Users,
   Settings
 } from "lucide-react"
+import { useLocation, useNavigate } from "react-router-dom" // <— adicionado
 
 type Item = {
   key: string
@@ -16,33 +17,35 @@ type Item = {
 
 const items: Item[] = [
   { key: "dashboard", label: "Painel de informação", icon: Home, route: "/dashboard" },
-  { key: "map", label: "Mapa interativo", icon: Map, route: "/mapa" },
+  { key: "map", label: "Mapa interativo", icon: Map, route: "/" },
   { key: "agents", label: "Agentes", icon: Users, route: "/agentes" },
   { key: "admin", label: "Administração", icon: Settings, route: "/administracao" },
 ]
 
-/**
- * Ajuste a estratégia de detecção de rota ativa depois (ex: useLocation / usePathname).
- * Por enquanto, simulação com 'activeKey'.
- */
-const activeKeyMock = "admin"
-
 export default function SidebarAdmin() {
+  const location = useLocation()
+  const navigate = useNavigate()
+
   const handleClick = useCallback((item: Item) => {
-    // Trocar por navegação real (react-router-dom navigate() ou Next.js router.push()).
-    console.log("Ir para:", item.route)
-  }, [])
+    navigate(item.route)
+  }, [navigate])
+
+  // pathname atual
+  const { pathname } = location
 
   return (
     <aside
-      className="w-60 min-h-screen border-r bg-background p-3 flex flex-col gap-1"
+      className="w-70 bg-background p-3 flex flex-col gap-1"
       aria-label="Menu de administração"
     >
       <nav className="flex flex-col gap-1">
         {items.map(item => {
+          // Ativo se pathname for exatamente a rota ou começar com ela (para subpáginas)
+          const isActive =
+            pathname === item.route ||
+            (item.route !== "/" && pathname.startsWith(item.route + "/"))
+
           const Icon = item.icon
-            // variant secondary para ativo, ghost para inativo
-          const isActive = item.key === activeKeyMock
           return (
             <Button
               key={item.key}
@@ -57,9 +60,6 @@ export default function SidebarAdmin() {
           )
         })}
       </nav>
-      <div className="mt-auto text-xs text-muted-foreground px-1 py-2">
-        {/* Espaço para versão / logo / etc */}
-      </div>
     </aside>
   )
 }
