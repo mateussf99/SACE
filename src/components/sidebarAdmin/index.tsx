@@ -35,7 +35,7 @@ export default function SidebarAdmin() {
 
   return (
     <aside
-      className="w-70 bg-background p-3 flex flex-col gap-1"
+      className="w-70 min-h-screen bg-background p-3 flex flex-col gap-1"
       aria-label="Menu de administração"
     >
       <nav className="flex flex-col gap-1">
