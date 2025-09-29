@@ -6,10 +6,16 @@ import Home from '../pages/home';
 import Login from '../pages/login';
 import Informacoes from '../pages/informacoes';
 import Teste from '../pages/teste';
+import Admin from '../pages/admin';
+import Dashboard from '../pages/dashboard';
+import Agentes from '../pages/agentes';
 import { useAuth } from '@/contexts/AuthContext';
-import SidebarAdmin from '@/components/sidebarAdmin'; // <--- import adicionado
+import SidebarAdmin from '@/components/sidebarAdmin'; 
 
-
+function PrivateRoute({ children }: { children: JSX.Element }) {
+    const { isAuthenticated } = useAuth();
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
 
 function AppRoutes() {
     const { isAuthenticated } = useAuth()
@@ -29,13 +35,47 @@ function AppRoutes() {
                     <main className="flex-1 overflow-y-auto">
                         <Routes>
                             <Route path="/" element={<Home />} />
-                            <Route path="/teste" element={<Teste />} />
-                            <Route path="/informacoes" element={<Informacoes />} />
+                            <Route path="/informacoes" element={<Informacoes />}/>
+                            <Route path="/teste" element={<Teste />}/>
+                            
+                            <Route
+                                path="/administracao"
+                                element={
+                                    <PrivateRoute>
+                                        <Admin />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/dashboard"
+                                element={
+                                    <PrivateRoute>
+                                        <Dashboard />
+                                    </PrivateRoute>
+                                }
+                            />
+                            <Route
+                                path="/agentes"
+                                element={
+                                    <PrivateRoute>
+                                        <Agentes />
+                                    </PrivateRoute>
+                                }
+                            />
+                            
+
+                            {/* Login (redireciona se já autenticado) */}
                             <Route
                                 path="/login"
                                 element={
                                     isAuthenticated ? <Navigate to="/" replace /> : <Login />
                                 }
+                            />
+
+                            {/* Fallback */}
+                            <Route
+                                path="*"
+                                element={<Navigate to={isAuthenticated ? "/" : "/login"} replace />}
                             />
                         </Routes>
                     </main>
