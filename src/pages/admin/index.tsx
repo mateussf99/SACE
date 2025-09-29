@@ -1,9 +1,11 @@
 import FormsAreas from '@/components/formsAreas'
+import FormsUser from '@/components/formsUser'
 
 function index() {
   return (
-    <div>
+    <div className=' mt-2 flex gap-4'>
       <FormsAreas />
+      <FormsUser />
     </div>
   )
 }
