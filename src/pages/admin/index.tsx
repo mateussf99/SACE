@@ -1,8 +1,10 @@
-
+import FormsAreas from '@/components/formsAreas'
 
 function index() {
   return (
-    <div>index</div>
+    <div>
+      <FormsAreas />
+    </div>
   )
 }
 
