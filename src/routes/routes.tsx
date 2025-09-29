@@ -7,6 +7,7 @@ import Login from '../pages/login';
 import Informacoes from '../pages/informacoes';
 import Teste from '../pages/teste';
 import { useAuth } from '@/contexts/AuthContext';
+import SidebarAdmin from '@/components/sidebarAdmin'; // <--- import adicionado
 
 
 
@@ -15,13 +16,18 @@ function AppRoutes() {
     return (
         
         <BrowserRouter>
-            <div className="flex flex-col min-h-screen">
-                <div className='sticky top-0 w-full z-10'>
+            <div className="flex flex-col h-screen">
+                <div className="sticky top-0 z-50">
                     {isAuthenticated ? <Header2 /> : <Header />}
                 </div>
                 
-                <div className='flex-grow min-h-0'>
-                    <Routes>
+                {/* Área principal: sidebar + conteúdo */}
+                <div className="flex flex-1 overflow-hidden">
+                    {isAuthenticated && (
+                        <SidebarAdmin />
+                    )}
+                    <main className="flex-1 overflow-y-auto">
+                        <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/teste" element={<Teste />} />
                             <Route path="/informacoes" element={<Informacoes />} />
@@ -31,7 +37,8 @@ function AppRoutes() {
                                     isAuthenticated ? <Navigate to="/" replace /> : <Login />
                                 }
                             />
-                    </Routes>
+                        </Routes>
+                    </main>
                 </div>
             </div>
             
