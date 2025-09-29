@@ -26,7 +26,7 @@ function index() {
     if (coords) setFlyTo(coords);
   };
   return (
-    <div className="relative w-full h-[calc(100svh-4rem)] md:h-[calc(100svh-5rem)]">
+    <div className="relative w-full h-[calc(100svh-4rem)] md:h-[calc(100svh-4rem)]">
       <Map className="w-full h-full" flyTo={flyTo} />
       <MapPanel onSearch={handleSearch} />
     </div>
