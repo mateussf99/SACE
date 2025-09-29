@@ -1,7 +1,6 @@
 import {useState, useEffect} from "react"
 import { MapPin, Trash2, Plus, Check, Loader2 } from "lucide-react"
-
-// Ajuste os paths dos componentes shadcn/ui conforme seu projeto
+import { toast } from "react-toastify"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -99,7 +98,7 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
   function handleAddEndereco() {
     const erro = validarCampos()
     if (erro) {
-      window.alert(erro)
+      toast.error(erro)
       return
     }
     const novo: Endereco = {
@@ -114,9 +113,6 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
     }
     setEnderecos((prev) => [novo, ...prev])
 
-    // Mantém CEP e Setor/Quarteirão; limpa campos de texto do endereço
-    setBairro("")
-    setLogradouro("")
   }
 
   function handleRemove(id: string) {
@@ -124,39 +120,18 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
   }
 
   async function handleFinalizar() {
-    if (enderecos.length === 0) {
-      window.alert("Adicione pelo menos um endereço.")
-      return
-    }
-    setEnviando(true)
-    try {
-      if (onFinish) {
-        await onFinish(enderecos)
-      } else {
-        // Ajuste a URL da sua API aqui
-        const resp = await fetch("/api/areas-visita", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enderecos }),
-        })
-        if (!resp.ok) throw new Error("Falha ao enviar os endereços.")
-      }
-      window.alert("Endereços enviados com sucesso!")
-      setEnderecos([])
-      setOpen(false)
-    } catch (e: any) {
-      window.alert(e?.message || "Erro ao finalizar o cadastro.")
-    } finally {
-      setEnviando(false)
-    }
+    //api e chamar no botão finalizar
   }
 
   return (
     <Dialog  open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="default">
-          <Plus className="mr-2 h-4 w-4" />
-          Cadastrar áreas de visita
+        <Button
+            variant="default"
+            className="h-20 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none"
+        >
+            <Plus  className="mr-1 !h-6 !w-6 shrink-0" />
+            Cadastrar áreas de visita
         </Button>
       </DialogTrigger>
 

@@ -1,4 +1,6 @@
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import Header from '../components/header';
 import Header2 from '../components/header2';
 import '../index.css';
@@ -82,7 +84,7 @@ function AppRoutes() {
                 </div>
             </div>
             
-            
+            <ToastContainer position="top-right" autoClose={4000} newestOnTop />
         </BrowserRouter>
         
     );
