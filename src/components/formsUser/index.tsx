@@ -84,7 +84,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
   const [enviando, setEnviando] = useState(false)
 
   // Limpa os campos para o próximo cadastro
-  function resetForm(opts: { keepUf?: boolean; keepFuncao?: boolean } = { keepUf: true, keepFuncao: true }) {
+  function resetForm(opts: { keepUf?: boolean; keepFuncao?: boolean } = { keepUf: true, keepFuncao: false }) {
     const { keepUf = true, keepFuncao = true } = opts
     setNome("")
     setCpf("")
@@ -144,8 +144,8 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
     }
     setUsuarios((prev) => [novo, ...prev])
 
-    // limpa para o próximo cadastro (mantém UF e Função)
-    resetForm({ keepUf: true, keepFuncao: true })
+    // limpa para o próximo cadastro (mantém UF e reseta Função)
+    resetForm({ keepUf: true, keepFuncao: false })
   }
 
   function handleRemove(id: string) {
