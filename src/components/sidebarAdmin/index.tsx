@@ -3,8 +3,8 @@ import { Button } from "@/components/ui/button"
 import {
   Home,
   Map,
-  Users,
-  Settings
+  User,
+  ShieldUser,
 } from "lucide-react"
 import { useLocation, useNavigate } from "react-router-dom" // <— adicionado
 
@@ -18,8 +18,8 @@ type Item = {
 const items: Item[] = [
   { key: "dashboard", label: "Painel de informação", icon: Home, route: "/dashboard" },
   { key: "map", label: "Mapa interativo", icon: Map, route: "/" },
-  { key: "agents", label: "Agentes", icon: Users, route: "/agentes" },
-  { key: "admin", label: "Administração", icon: Settings, route: "/administracao" },
+  { key: "agents", label: "Agentes", icon: User, route: "/agentes" },
+  { key: "admin", label: "Administração", icon: ShieldUser, route: "/administracao" },
 ]
 
 export default function SidebarAdmin() {
@@ -38,7 +38,7 @@ export default function SidebarAdmin() {
       className="w-70 min-h-screen bg-background p-3 flex flex-col gap-1"
       aria-label="Menu de administração"
     >
-      <nav className="flex flex-col gap-1">
+      <nav className="flex flex-col gap-3">
         {items.map(item => {
           // Ativo se pathname for exatamente a rota ou começar com ela (para subpáginas)
           const isActive =
@@ -49,8 +49,8 @@ export default function SidebarAdmin() {
           return (
             <Button
               key={item.key}
-              variant={isActive ? "secondary" : "ghost"}
-              className="justify-start gap-2"
+              variant={isActive ? "secondary" : "link"}
+              className="justify-start gap-2 h-10"
               onClick={() => handleClick(item)}
               aria-current={isActive ? "page" : undefined}
             >
