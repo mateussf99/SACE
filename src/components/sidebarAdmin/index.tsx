@@ -49,7 +49,7 @@ export default function SidebarAdmin() {
           return (
             <Button
               key={item.key}
-              variant={isActive ? "secondary" : "ghost"}
+              variant={isActive ? "secondary" : "link"}
               className="justify-start gap-2 h-10"
               onClick={() => handleClick(item)}
               aria-current={isActive ? "page" : undefined}
