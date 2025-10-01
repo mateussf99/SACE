@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
 type Endereco = {
@@ -236,8 +235,6 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
               onChange={(e) => setLogradouro(e.target.value)}
             />
           </div>
-
-          <Separator />
 
           {/* Lista de Endereços cadastrados */}
           <div className="grid gap-2">

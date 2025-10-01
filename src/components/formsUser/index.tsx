@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { User, Trash2, Plus, Check, Loader2, ClipboardPlus } from "lucide-react"
+import { User, Trash2, Plus, Check, Loader2, ClipboardList } from "lucide-react"
 import { toast } from "react-toastify"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 
 type Usuario = {
@@ -178,7 +177,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
           variant="default"
           className="h-20 bg-gradient-to-r from-orange to-orange-dark hover:from-orange-dark hover:to-orange text-white text-xl border-none"
         >
-          <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
+          <ClipboardList className="mr-1 !h-6 !w-6 shrink-0" />
           Cadastrar novo usuário
         </Button>
       </DialogTrigger>
@@ -192,8 +191,8 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
           <DialogTitle>Cadastrar novo usuário</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2 flex-1 overflow-y-auto pr-1">
-          <div className="text-sm font-medium text-blue-dark">Dados pessoais</div>
+        <div className="grid gap-4 py-2 flex-1 overflow-y-auto p-1">
+          <div className="text-md font-medium text-blue-dark">Dados pessoais</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div className="sm:col-span-2">
               <Label className="text-gray-500" htmlFor="nome">Nome completo</Label>
@@ -241,9 +240,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
             </div>
           </div>
 
-          <Separator />
-
-          <div className="text-sm font-medium text-blue-dark">Dados de contato</div>
+          <div className="text-md font-medium text-blue-dark">Dados de contato</div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label className="text-gray-500" htmlFor="email">E-mail</Label>
@@ -343,9 +340,8 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
             </div>
           </div>
 
-          <Separator />
 
-          <div className="text-sm font-medium text-blue-dark">Dados profissionais</div>
+          <div className="text-md font-medium text-blue-dark">Dados profissionais</div>
           <div className="">
             <div>
               <Label className="text-gray-500">Função</Label>
@@ -361,13 +357,12 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
             </div>
           </div>
 
-          <Separator />
 
-          <div className="text-sm font-medium text-blue-dark">Usuários adicionados</div>
+          <div className="text-md font-medium text-blue-dark">Usuários adicionados</div>
           <div className="rounded-md border-none">
             <ScrollArea className="bg-secondary border-none h-40">
               {usuarios.length === 0 ? (
-                <div className="flex h-40 border-none rounded-md items-center justify-center text-sm text-muted-foreground">
+                <div className="flex h-40 border-none rounded-md items-center justify-center text-md text-muted-foreground">
                   Nenhum usuário adicionado.
                 </div>
               ) : (
@@ -375,7 +370,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
                   {usuarios.map((u) => (
                     <li key={u.id} className="flex items-start gap-3 p-3">
                       <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1 text-sm">
+                      <div className="flex-1 text-md">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="font-medium">{u.nome}</span>
                           <Badge variant="secondary">{u.email}</Badge>
