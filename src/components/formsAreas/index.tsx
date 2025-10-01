@@ -165,24 +165,19 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
           {/* Setor + Quarteirão */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
-              <Label className="text-gray-500">Selecionar Identificador do setor</Label>
-              <Select value={setorId} onValueChange={setSetorId}>
-                <SelectTrigger className="bg-secondary border-none w-full">
-                  <SelectValue placeholder="Selecione o setor" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-none">
-                  {setores.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
+              <Input
+                id="setor"
+                placeholder="Digite o identificador do setor"
+                className="bg-secondary border-none text-blue-dark w-full"
+                value={setorId}
+                onChange={(e) => setSetorId(e.target.value)}
+              />
             </div>
             <div>
               <Label className="text-gray-500" htmlFor="quarteirao">Nº Quarteirão</Label>
               <Input
-                id="quarteirao"
+                id="numero_quarteirao"
                 placeholder="001"
                 className="bg-secondary border-none text-blue-dark w-full"
                 value={quarteirao}

@@ -49,12 +49,12 @@ function Index() {
         <div className="flex w-full gap-20 justify-between">
           <>
             <Link to="/">
-                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/' ? 'link' : 'outline'}>
+                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/' ? 'secondary' : 'outline'}>
                   Mapa interativo
                 </Button>
             </Link>
             <Link to="/informacoes">
-                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/informacoes' ? 'link' : 'outline'}>
+                <Button className="md:text-xl md:w-[250px]" variant={location.pathname === '/informacoes' ? 'secondary' : 'outline'}>
                   Informações
                 </Button>
             </Link>
