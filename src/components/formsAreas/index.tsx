@@ -30,11 +30,6 @@ const UFS = [
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ]
 
-const DEFAULT_SETORES: Setor[] = [
-  { id: "setor-1", label: "Microrregião A/Setor A/Nome 0" },
-  { id: "setor-2", label: "Microrregião B/Setor B/Nome 1" },
-  { id: "setor-3", label: "Microrregião C/Setor C/Nome 2" },
-]
 
 const SETOR_OPTIONS = Array.from({ length: 10 }, (_, i) => `Setor A ${String(i + 1).padStart(2, "0")}`)
 
