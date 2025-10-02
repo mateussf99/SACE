@@ -20,10 +20,7 @@ type Endereco = {
   logradouro: string
 }
 
-type Setor = { id: string; label: string }
-
 type Props = {
-  setores?: Setor[]
   defaultOpen?: boolean
   onFinish?: (enderecos: Endereco[]) => Promise<void> | void
 }
@@ -39,6 +36,8 @@ const DEFAULT_SETORES: Setor[] = [
   { id: "setor-3", label: "Microrregião C/Setor C/Nome 2" },
 ]
 
+const SETOR_OPTIONS = Array.from({ length: 10 }, (_, i) => `Setor A ${String(i + 1).padStart(2, "0")}`)
+
 function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "")
 }
@@ -48,7 +47,7 @@ function formatCep(v: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
-export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpen, onFinish }: Props) {
+export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
   const [open, setOpen] = useState(!!defaultOpen)
 
   const [cep, setCep] = useState("")
@@ -165,13 +164,18 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
-              <Input
-                id="setor"
-                placeholder="Digite o identificador do setor"
-                className="bg-secondary border-none text-blue-dark w-full"
-                value={setorId}
-                onChange={(e) => setSetorId(e.target.value)}
-              />
+              <Select value={setorId} onValueChange={setSetorId}>
+                <SelectTrigger id="setor" className="bg-secondary border-none text-blue-dark w-full">
+                  <SelectValue placeholder="Selecione o setor" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-none">
+                  {SETOR_OPTIONS.map((setor) => (
+                    <SelectItem key={setor} value={setor}>
+                      {setor}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label className="text-gray-500" htmlFor="quarteirao">Nº Quarteirão</Label>
