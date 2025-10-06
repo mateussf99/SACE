@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { User, Trash2, Plus, Check, Loader2, ClipboardList } from "lucide-react"
 import { toast } from "react-toastify"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
@@ -8,13 +8,19 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import api from "@/services/api"
+
+type SetorApi = {
+  area_de_visita_id: number
+  setor: string
+}
 
 type Usuario = {
   id: string
   nome: string
   cpf: string
   rg: string
-  nascimento: string // ISO yyyy-mm-dd
+  nascimento: string
   email: string
   ddd: string
   telefone: string
@@ -24,6 +30,11 @@ type Usuario = {
   logradouro: string
   numero: string
   funcao: "AGENTE" | "SUPERVISOR"
+  senha: string
+  setorAtuacao: SetorApi[]
+  situacaoAtual: boolean
+  registroServidor: string        // novo
+  dataAdmissao: string            // novo (YYYY-MM-DD)
 }
 
 type Props = {
@@ -35,6 +46,7 @@ const UFS = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG",
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ]
+
 
 function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "")
@@ -78,9 +90,45 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
 
   // Dados profissionais
   const [funcao, setFuncao] = useState<"" | "AGENTE" | "SUPERVISOR">("")
+  const [senha, setSenha] = useState<string>("")
+  const [confirmarSenha, setConfirmarSenha] = useState<string>("")
+  const [situacaoAtual, setSituacaoAtual] = useState<boolean>(true)
+  const [registroServidor, setRegistroServidor] = useState<string>("") // novo
+  const [dataAdmissao, setDataAdmissao] = useState<string>("")         // novo
+
+  // Setores (via API)
+  const [setorOptions, setSetorOptions] = useState<SetorApi[]>([])
+  const [carregandoSetores, setCarregandoSetores] = useState(false)
+  const [setoresSelecionados, setSetoresSelecionados] = useState<SetorApi[]>([])
+  const [setorTempId, setSetorTempId] = useState<string>("")
 
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [enviando, setEnviando] = useState(false)
+
+  useEffect(() => {
+    let ativo = true
+    const carregar = async () => {
+      try {
+        setCarregandoSetores(true)
+        const { data } = await api.get("/area_de_visita")
+        const list = Array.isArray(data) ? data : []
+        const parsed: SetorApi[] = list
+          .map((it: any) => ({
+            area_de_visita_id: Number(it?.area_de_visita_id),
+            setor: String(it?.setor ?? "")
+          }))
+          .filter((x) => Number.isFinite(x.area_de_visita_id) && x.setor)
+        if (ativo) setSetorOptions(parsed)
+      } catch (e) {
+        console.error("Erro ao carregar /area_de_visita:", e)
+        toast.error("Falha ao carregar setores.")
+      } finally {
+        if (ativo) setCarregandoSetores(false)
+      }
+    }
+    carregar()
+    return () => { ativo = false }
+  }, [])
 
   // Limpa os campos para o próximo cadastro
   function resetForm(opts: { keepUf?: boolean; keepFuncao?: boolean } = { keepUf: true, keepFuncao: false }) {
@@ -98,6 +146,13 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
     setLogradouro("")
     setNumero("")
     if (!keepFuncao) setFuncao("")
+    setSenha("")
+    setConfirmarSenha("")
+    setSetoresSelecionados([])
+    setSetorTempId("")
+    setSituacaoAtual(true)
+    setRegistroServidor("")   // novo
+    setDataAdmissao("")       // novo
     // foco no primeiro campo
     setTimeout(() => nomeRef.current?.focus(), 0)
   }
@@ -116,7 +171,27 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
     if (!logradouro.trim()) return "Informe o logradouro."
     if (!numero.trim()) return "Informe o número."
     if (!funcao) return "Selecione a função."
+    if (!registroServidor.trim()) return "Informe o registro do servidor."   // novo
+    if (!dataAdmissao) return "Informe a data de admissão."                  // novo
+    if (senha.length < 6) return "A senha deve ter pelo menos 6 caracteres."
+    if (senha !== confirmarSenha) return "As senhas não coincidem."
+    if (setoresSelecionados.length === 0) return "Selecione pelo menos um setor de atuação."
     return null
+  }
+
+  function handleAddSetor() {
+    if (!setorTempId) return
+    const id = Number(setorTempId)
+    const opt = setorOptions.find((o) => o.area_de_visita_id === id)
+    if (!opt) return
+    setSetoresSelecionados((prev) => {
+      const exists = prev.some((s) => s.area_de_visita_id === opt.area_de_visita_id)
+      return exists ? prev : [...prev, opt]
+    })
+    setSetorTempId("")
+  }
+  function handleRemoveSetor(id: number) {
+    setSetoresSelecionados((prev) => prev.filter((x) => x.area_de_visita_id !== id))
   }
 
   function handleAddUsuario() {
@@ -140,10 +215,13 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
       logradouro: logradouro.trim(),
       numero: numero.trim(),
       funcao: funcao as "AGENTE" | "SUPERVISOR",
+      senha,
+      setorAtuacao: setoresSelecionados,
+      situacaoAtual,
+      registroServidor: registroServidor.trim(), // novo
+      dataAdmissao,                              // novo
     }
     setUsuarios((prev) => [novo, ...prev])
-
-    // limpa para o próximo cadastro (mantém UF e reseta Função)
     resetForm({ keepUf: true, keepFuncao: false })
   }
 
@@ -156,15 +234,50 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
       toast.error("Adicione pelo menos um usuário.")
       return
     }
+
+    const payload = usuarios.map((u) => {
+      const numeroParsed = parseInt(onlyDigits(u.numero), 10)
+      const setoresIds = Array.isArray(u.setorAtuacao)
+        ? u.setorAtuacao.map((s) => s.area_de_visita_id)
+        : []
+
+      return {
+        nome_completo: u.nome,
+        cpf: onlyDigits(u.cpf),
+        rg: u.rg,
+        data_nascimento: u.nascimento,
+        email: u.email,
+        telefone_ddd: Number(onlyDigits(u.ddd) || 0),
+        telefone_numero: Number(onlyDigits(u.telefone) || 0),
+        estado: u.uf,
+        municipio: u.municipio,
+        bairro: u.bairro,
+        logradouro: u.logradouro,
+        numero: Number.isNaN(numeroParsed) ? 0 : numeroParsed,
+        registro_do_servidor: u.registroServidor || null,
+        cargo: u.funcao === "AGENTE" ? "Agente de Endemias" : "Supervisor",
+        situacao_atual: u.situacaoAtual,
+        data_de_admissao: u.dataAdmissao || new Date().toISOString().slice(0, 10),
+        setor_de_atuacao: setoresIds, // array de IDs
+        senha: u.senha,
+        nivel_de_acesso: u.funcao === "AGENTE" ? "agente" : "supervisor",
+      }
+    })
+
+    const body = payload
+    console.log("Payload final (lista):", body)
+
     try {
       setEnviando(true)
-      await onFinish?.(usuarios)
+      const res = await api.post("/usuarios", body)
+      console.log("Resposta /usuarios:", res.data)
       toast.success("Cadastro finalizado com sucesso.")
       setOpen(false)
-      // opcional: limpar lista após finalizar
-      // setUsuarios([])
-    } catch (e) {
-      toast.error("Falha ao finalizar cadastro.")
+    } catch (e: any) {
+      console.error("Erro ao enviar /usuarios:", e?.response?.data || e)
+      console.debug("Payload que falhou:", body)
+      const msg = e?.response?.data?.message || "Falha ao finalizar cadastro."
+      toast.error(msg)
     } finally {
       setEnviando(false)
     }
@@ -355,8 +468,115 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
                 </SelectContent>
               </Select>
             </div>
-          </div>
 
+            {/* Situação */}
+            <div className="mt-2">
+              <Label className="text-gray-500">Situação</Label>
+              <Select value={situacaoAtual ? "true" : "false"} onValueChange={(v) => setSituacaoAtual(v === "true")}>
+                <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
+                  <SelectValue placeholder="Selecione a situação" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-none">
+                  <SelectItem value="true">Ativo</SelectItem>
+                  <SelectItem value="false">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Registro e Admissão */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <div>
+                <Label className="text-gray-500" htmlFor="registro_servidor">Registro do servidor</Label>
+                <Input
+                  id="registro_servidor"
+                  placeholder="Ex.: MAT54321"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={registroServidor}
+                  onChange={(e) => setRegistroServidor(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="data_admissao">Data de admissão</Label>
+                <Input
+                  id="data_admissao"
+                  type="date"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={dataAdmissao}
+                  onChange={(e) => setDataAdmissao(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Senhas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+              <div>
+                <Label className="text-gray-500" htmlFor="senha">Senha</Label>
+                <Input
+                  id="senha"
+                  type="password"
+                  placeholder="Digite a senha"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={senha}
+                  onChange={(e) => setSenha(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="confirmar_senha">Confirmar senha</Label>
+                <Input
+                  id="confirmar_senha"
+                  type="password"
+                  placeholder="Repita a senha"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={confirmarSenha}
+                  onChange={(e) => setConfirmarSenha(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {/* Setor de atuação (via API) */}
+            <div className="mt-3">
+              <Label className="text-gray-500">Setor de atuação</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mt-1">
+                <Select value={setorTempId} onValueChange={setSetorTempId} disabled={carregandoSetores}>
+                  <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
+                    <SelectValue placeholder={carregandoSetores ? "Carregando setores..." : "Selecione o setor"} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none">
+                    {setorOptions.length === 0 ? (
+                      <SelectItem value="" disabled>Nenhum setor encontrado</SelectItem>
+                    ) : (
+                      setorOptions.map((s) => (
+                        <SelectItem key={s.area_de_visita_id} value={String(s.area_de_visita_id)}>
+                          {s.setor}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button type="button" onClick={handleAddSetor} className="sm:!w-40" disabled={!setorTempId}>
+                  Adicionar setor
+                </Button>
+              </div>
+
+              {setoresSelecionados.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {setoresSelecionados.map((s) => (
+                    <Badge key={s.area_de_visita_id} variant="secondary" className="flex items-center gap-2">
+                      {s.setor}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSetor(s.area_de_visita_id)}
+                        className="ml-1 text-red-600"
+                        aria-label={`Remover ${s.setor}`}
+                      >
+                        ×
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
 
           <div className="text-md font-medium text-blue-dark">Usuários adicionados</div>
           <div className="rounded-md border-none">
@@ -381,6 +601,11 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
                         <div className="text-xs text-muted-foreground mt-1">
                           {u.logradouro}, {u.numero} — {u.bairro} — {u.municipio}/{u.uf}
                         </div>
+                        {u.setorAtuacao?.length > 0 && (
+                          <div className="text-xs text-muted-foreground mt-1">
+                            Setor(es): {u.setorAtuacao.map((s) => s.setor).join(", ")}
+                          </div>
+                        )}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleRemove(u.id)} aria-label="Remover">
                         <Trash2 className="h-4 w-4" />
