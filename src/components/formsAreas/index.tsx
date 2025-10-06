@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import api from "@/services/api" // <- adiciona o cliente HTTP
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type Endereco = {
   id: string
@@ -30,8 +31,6 @@ const UFS = [
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ]
 
-
-const SETOR_OPTIONS = Array.from({ length: 10 }, (_, i) => `Setor A ${String(i + 1).padStart(2, "0")}`)
 
 function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "")
@@ -79,8 +78,8 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
 
   function validarCampos(): string | null {
     if (!onlyDigits(cep)) return "Informe um CEP válido."
-    if (!setorId) return "Selecione o identificador do setor."
-    if (!quarteirao) return "Informe o Nº do quarteirão."
+    if (!setorId) return "Informe o identificador do setor."
+    if (!quarteirao || isNaN(Number(quarteirao))) return "Informe o Nº do quarteirão."
     if (!uf) return "Selecione o estado (UF)."
     if (!municipio.trim()) return "Informe o município."
     if (!bairro.trim()) return "Informe o bairro."
@@ -113,7 +112,50 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
   }
 
   async function handleFinalizar() {
-    //api e chamar no botão finalizar
+    if (enderecos.length === 0) {
+      toast.error("Adicione ao menos um endereço.")
+      return
+    }
+
+    // Monta o payload conforme a API /area_de_visita
+    const payload = enderecos.map((e) => ({
+      cep: e.cep,
+      setor: e.setorId,
+      numero_quarteirao: Number(e.quarteirao),
+      estado: e.uf,
+      municipio: e.municipio,
+      bairro: e.bairro,
+      // Atenção: API espera "logadouro" (com 'o'), seguindo o exemplo fornecido
+      logadouro: e.logradouro,
+    }))
+
+    setEnviando(true)
+    try {
+      await api.post("/area_de_visita", payload)
+      toast.success("Áreas de visita cadastradas com sucesso!")
+
+      // callback opcional
+      if (onFinish) await onFinish(enderecos)
+
+      // limpa e fecha
+      setEnderecos([])
+      setCep("")
+      setSetorId("")
+      setQuarteirao("")
+      setUf("AL")
+      setMunicipio("Maceió")
+      setBairro("")
+      setLogradouro("")
+      setOpen(false)
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Falha ao cadastrar áreas de visita."
+      toast.error(msg)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -159,18 +201,13 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <div>
               <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
-              <Select value={setorId} onValueChange={setSetorId}>
-                <SelectTrigger id="setor" className="bg-secondary border-none text-blue-dark w-full">
-                  <SelectValue placeholder="Selecione o setor" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-none">
-                  {SETOR_OPTIONS.map((setor) => (
-                    <SelectItem key={setor} value={setor}>
-                      {setor}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Input
+                id="setor"
+                placeholder="Ex.: Setor A 01"
+                className="bg-secondary border-none text-blue-dark w-full"
+                value={setorId}
+                onChange={(e) => setSetorId(e.target.value)}
+              />
             </div>
             <div>
               <Label className="text-gray-500" htmlFor="quarteirao">Nº Quarteirão</Label>
