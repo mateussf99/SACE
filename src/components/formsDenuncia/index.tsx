@@ -47,6 +47,7 @@ export default function FormsDenunciaDialog({
     complemento: "",
   })
   const [evidencia, setEvidencia] = useState("")
+  const [files, setFiles] = useState<File[]>([])
   const [enviando, setEnviando] = useState(false)
 
   // CEP
@@ -125,9 +126,22 @@ export default function FormsDenunciaDialog({
     const complemento = form.complemento.trim()
     if (complemento) payload.endereco_complemento = complemento
 
+    const formData = new FormData()
+    formData.append("rua_avenida", form.logradouro.trim())
+    formData.append("numero", String(numero))
+    formData.append("bairro", form.bairro.trim())
+    formData.append("tipo_imovel", form.tipoImovel.trim())
+    formData.append("observacoes", evidencia.trim())
+    formData.append("data_denuncia", data_denuncia)
+    formData.append("hora_denuncia", hora_denuncia)
+    if (complemento) formData.append("endereco_complemento", complemento)
+    files.forEach((file) => formData.append("files", file))
+
     try {
       setEnviando(true)
-      await api.post("/denuncia", payload)
+      await api.post("/denuncia", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
       await onFinish?.({ ...form, evidencia })
       toast.success("Denúncia cadastrada com sucesso.")
       setOpen(false)
@@ -140,6 +154,7 @@ export default function FormsDenunciaDialog({
       })
       setEvidencia("")
       setCep("")
+      setFiles([])
     } catch (err: any) {
       console.error("Erro ao enviar /denuncia:", err?.response?.data || err)
       const msg = err?.response?.data?.message || "Não foi possível cadastrar a denúncia."
@@ -286,6 +301,20 @@ export default function FormsDenunciaDialog({
                 className="bg-secondary border-none text-blue-dark h-20 resize-none overflow-y-auto"
                 value={evidencia}
                 onChange={(e) => setEvidencia(e.target.value)}
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="files" className="text-gray-500">
+                Anexar evidências (fotos)
+              </Label>
+              <Input
+                id="files"
+                type="file"
+                multiple
+                accept="image/*"
+                className="bg-secondary border-none text-blue-dark cursor-pointer"
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
               />
             </div>
           </section>
