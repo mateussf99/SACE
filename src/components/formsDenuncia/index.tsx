@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { MapPin, FileText, Loader2, Check, ClipboardPlus } from "lucide-react"
+import api from "@/services/api"
 
 type DenunciaForm = {
   logradouro: string
@@ -23,11 +24,16 @@ type Props = {
   onFinish?: (denuncia: DenunciaForm & { evidencia: string }) => Promise<void> | void
 }
 
-const DEFAULT_BAIRROS = ["Ponta Verde", "Pajuçara", "Jatiúca", "Farol"]
 const DEFAULT_TIPOS_IMOVEL = ["Residencial", "Comercial", "Terreno", "Equipamento Público"]
 
+// Helpers para CEP
+const onlyDigits = (v: string) => (v || "").replace(/\D/g, "")
+const formatCep = (v: string) => {
+  const d = onlyDigits(v).slice(0, 8)
+  return d.length > 5 ? `${d.slice(0, 5)}-${d.slice(5)}` : d
+}
+
 export default function FormsDenunciaDialog({
-  bairros = DEFAULT_BAIRROS,
   tiposImovel = DEFAULT_TIPOS_IMOVEL,
   defaultOpen,
   onFinish,
@@ -43,13 +49,48 @@ export default function FormsDenunciaDialog({
   const [evidencia, setEvidencia] = useState("")
   const [enviando, setEnviando] = useState(false)
 
+  // CEP
+  const [cep, setCep] = useState("")
+  const [buscandoCep, setBuscandoCep] = useState(false)
+
   function updateField<K extends keyof DenunciaForm>(key: K, value: DenunciaForm[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function buscarCep() {
+    const d = onlyDigits(cep)
+    if (d.length !== 8) return
+    try {
+      setBuscandoCep(true)
+      const res = await fetch(`https://viacep.com.br/ws/${d}/json/`)
+      const data = await res.json()
+      if (!res.ok || data?.erro) {
+        toast.error("CEP não encontrado.")
+        return
+      }
+      if (typeof data?.bairro === "string" && data.bairro.trim()) {
+        setForm((prev) => ({ ...prev, bairro: data.bairro }))
+      } else {
+        toast.warn("CEP sem bairro definido.")
+      }
+      // Preencher logradouro se vier do CEP e o campo ainda estiver vazio
+      if (typeof data?.logradouro === "string" && data.logradouro.trim()) {
+        setForm((prev) => ({
+          ...prev,
+          logradouro: prev.logradouro.trim() ? prev.logradouro : data.logradouro,
+        }))
+      }
+    } catch {
+      toast.error("Falha ao buscar CEP.")
+    } finally {
+      setBuscandoCep(false)
+    }
   }
 
   function validarCampos(): string | null {
     if (!form.logradouro.trim()) return "Informe o logradouro."
     if (!form.numero.trim()) return "Informe o número do imóvel."
+    if (!/^\d+$/.test(form.numero.trim())) return "Informe um número do imóvel válido (apenas dígitos)."
     if (!form.bairro.trim()) return "Informe o bairro."
     if (!form.tipoImovel.trim()) return "Selecione o tipo de imóvel."
     if (!evidencia.trim()) return "Descreva a evidência."
@@ -62,8 +103,31 @@ export default function FormsDenunciaDialog({
       toast.error(erro)
       return
     }
+
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, "0")
+    const data_denuncia = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+    const hora_denuncia = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`
+
+    const numero = parseInt(form.numero.trim(), 10)
+
+    const basePayload = {
+      rua_avenida: form.logradouro.trim(),
+      numero,
+      bairro: form.bairro.trim(),
+      tipo_imovel: form.tipoImovel.trim(),
+      data_denuncia,
+      hora_denuncia,
+      observacoes: evidencia.trim(),
+    } as const
+
+    const payload: Record<string, any> = { ...basePayload }
+    const complemento = form.complemento.trim()
+    if (complemento) payload.endereco_complemento = complemento
+
     try {
       setEnviando(true)
+      await api.post("/denuncia", payload)
       await onFinish?.({ ...form, evidencia })
       toast.success("Denúncia cadastrada com sucesso.")
       setOpen(false)
@@ -75,9 +139,11 @@ export default function FormsDenunciaDialog({
         complemento: "",
       })
       setEvidencia("")
-    } catch (err) {
-      console.error(err)
-      toast.error("Não foi possível cadastrar a denúncia.")
+      setCep("")
+    } catch (err: any) {
+      console.error("Erro ao enviar /denuncia:", err?.response?.data || err)
+      const msg = err?.response?.data?.message || "Não foi possível cadastrar a denúncia."
+      toast.error(msg)
     } finally {
       setEnviando(false)
     }
@@ -105,7 +171,7 @@ export default function FormsDenunciaDialog({
                 Localização da denúncia
               </h3>
               <p className="text-xs text-muted-foreground">
-                Preencha com as informações de endereço da denúncia.
+                Informe CEP para preencher o bairro automaticamente.
               </p>
             </div>
 
@@ -115,14 +181,37 @@ export default function FormsDenunciaDialog({
               </Label>
               <Input
                 id="logradouro"
-                placeholder="Rua do sol"
+                placeholder="Digite o logradouro"
                 className="bg-secondary border-none text-blue-dark"
                 value={form.logradouro}
                 onChange={(e) => updateField("logradouro", e.target.value)}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {/* Ajustado para 4 colunas: CEP, Número, Bairro, Tipo */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+              <div className="grid gap-2">
+                <Label htmlFor="cep" className="text-gray-500">
+                  CEP
+                </Label>
+                <Input
+                  id="cep"
+                  placeholder="00000-000"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={cep}
+                  onChange={(e) => setCep(formatCep(e.target.value))}
+                  onBlur={buscarCep}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.currentTarget.blur()
+                    }
+                  }}
+                />
+                {buscandoCep && (
+                  <span className="text-xs text-muted-foreground">Buscando CEP...</span>
+                )}
+              </div>
+
               <div className="grid gap-2">
                 <Label htmlFor="numero" className="text-gray-500">
                   Número do imóvel
@@ -142,17 +231,18 @@ export default function FormsDenunciaDialog({
                 </Label>
                 <Input
                   id="bairro"
-                  placeholder={bairros[0] ?? "Informe o bairro"}
+                  placeholder="Informe o bairro"
                   className="bg-secondary border-none text-blue-dark"
                   value={form.bairro}
                   onChange={(e) => updateField("bairro", e.target.value)}
+                  disabled={buscandoCep}
                 />
               </div>
 
               <div className="grid gap-2">
                 <Label className="text-gray-500">Tipo de imóvel</Label>
                 <Select value={form.tipoImovel} onValueChange={(val) => updateField("tipoImovel", val)}>
-                  <SelectTrigger className="bg-secondary border-none text-blue-dark">
+                  <SelectTrigger className="w-full bg-secondary border-none text-blue-dark">
                     <SelectValue placeholder="Selecione" />
                   </SelectTrigger>
                   <SelectContent className="bg-white border-none">
