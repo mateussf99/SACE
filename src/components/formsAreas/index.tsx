@@ -5,9 +5,10 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogT
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
+import api from "@/services/api" // <- adiciona o cliente HTTP
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type Endereco = {
   id: string
@@ -20,10 +21,7 @@ type Endereco = {
   logradouro: string
 }
 
-type Setor = { id: string; label: string }
-
 type Props = {
-  setores?: Setor[]
   defaultOpen?: boolean
   onFinish?: (enderecos: Endereco[]) => Promise<void> | void
 }
@@ -33,11 +31,6 @@ const UFS = [
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ]
 
-const DEFAULT_SETORES: Setor[] = [
-  { id: "setor-1", label: "Microrregião A/Setor A/Nome 0" },
-  { id: "setor-2", label: "Microrregião B/Setor B/Nome 1" },
-  { id: "setor-3", label: "Microrregião C/Setor C/Nome 2" },
-]
 
 function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "")
@@ -48,7 +41,7 @@ function formatCep(v: string) {
   return `${d.slice(0, 5)}-${d.slice(5)}`
 }
 
-export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpen, onFinish }: Props) {
+export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
   const [open, setOpen] = useState(!!defaultOpen)
 
   const [cep, setCep] = useState("")
@@ -85,8 +78,8 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
 
   function validarCampos(): string | null {
     if (!onlyDigits(cep)) return "Informe um CEP válido."
-    if (!setorId) return "Selecione o identificador do setor."
-    if (!quarteirao) return "Informe o Nº do quarteirão."
+    if (!setorId) return "Informe o identificador do setor."
+    if (!quarteirao || isNaN(Number(quarteirao))) return "Informe o Nº do quarteirão."
     if (!uf) return "Selecione o estado (UF)."
     if (!municipio.trim()) return "Informe o município."
     if (!bairro.trim()) return "Informe o bairro."
@@ -119,7 +112,50 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
   }
 
   async function handleFinalizar() {
-    //api e chamar no botão finalizar
+    if (enderecos.length === 0) {
+      toast.error("Adicione ao menos um endereço.")
+      return
+    }
+
+    // Monta o payload conforme a API /area_de_visita
+    const payload = enderecos.map((e) => ({
+      cep: e.cep,
+      setor: e.setorId,
+      numero_quarteirao: Number(e.quarteirao),
+      estado: e.uf,
+      municipio: e.municipio,
+      bairro: e.bairro,
+      // Atenção: API espera "logadouro" (com 'o'), seguindo o exemplo fornecido
+      logadouro: e.logradouro,
+    }))
+
+    setEnviando(true)
+    try {
+      await api.post("/area_de_visita", payload)
+      toast.success("Áreas de visita cadastradas com sucesso!")
+
+      // callback opcional
+      if (onFinish) await onFinish(enderecos)
+
+      // limpa e fecha
+      setEnderecos([])
+      setCep("")
+      setSetorId("")
+      setQuarteirao("")
+      setUf("AL")
+      setMunicipio("Maceió")
+      setBairro("")
+      setLogradouro("")
+      setOpen(false)
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Falha ao cadastrar áreas de visita."
+      toast.error(msg)
+    } finally {
+      setEnviando(false)
+    }
   }
 
   return (
@@ -167,7 +203,7 @@ export default function FormsAreasDialog({ setores = DEFAULT_SETORES, defaultOpe
               <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
               <Input
                 id="setor"
-                placeholder="Digite o identificador do setor"
+                placeholder="Ex.: Setor A 01"
                 className="bg-secondary border-none text-blue-dark w-full"
                 value={setorId}
                 onChange={(e) => setSetorId(e.target.value)}
