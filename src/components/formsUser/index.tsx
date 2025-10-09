@@ -120,7 +120,6 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
           .filter((x) => Number.isFinite(x.area_de_visita_id) && x.setor)
         if (ativo) setSetorOptions(parsed)
       } catch (e) {
-        console.error("Erro ao carregar /area_de_visita:", e)
         toast.error("Falha ao carregar setores.")
       } finally {
         if (ativo) setCarregandoSetores(false)
@@ -412,7 +411,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
               <Label className="text-gray-500" htmlFor="municipio">Município</Label>
               <Input
                 id="municipio"
-                placeholder="Selecione o município"
+                placeholder="Digite o município"
                 className="bg-secondary border-none text-blue-dark"
                 value={municipio}
                 onChange={(e) => setMunicipio(e.target.value)}
@@ -422,7 +421,7 @@ export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
               <Label className="text-gray-500" htmlFor="bairro">Bairro</Label>
               <Input
                 id="bairro"
-                placeholder="Selecione o bairro"
+                placeholder="Digite o bairro"
                 className="bg-secondary border-none text-blue-dark"
                 value={bairro}
                 onChange={(e) => setBairro(e.target.value)}
