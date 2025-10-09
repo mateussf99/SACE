@@ -22,6 +22,10 @@ const buttonVariants = cva(
         link: "text-blue-dark underline-offset-4 ",
         dark:
           "bg-blue-dark text-white shadow-xs hover:bg-blue-dark/90",
+        nav:
+        "bg-secondary text-blue-dark border-b-4 border-[#DEE6F7]",
+        navactive:
+        "bg-secondary text-blue-dark border-b-4 border-blue font-semibold",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
