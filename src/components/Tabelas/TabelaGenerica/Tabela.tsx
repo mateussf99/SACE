@@ -11,8 +11,8 @@ interface TabelaProps<TData extends object> {
 export default function Tabela<TData extends object>({ table }: TabelaProps<TData>) {
     return (
         <CardContent className="p-0 min-w-[320px] overflow-x-auto w-full">
-            <div className="overflow-x-auto">
-                <Table className="text-responsive2">
+            <div className="w-full overflow-x-auto">
+                <Table className="text-fluid-large min-w-max">
                     {/* Cabeçalho */}
                     <TableHeader>
                         {table.getHeaderGroups().map(headerGroup => (
@@ -44,11 +44,11 @@ export default function Tabela<TData extends object>({ table }: TabelaProps<TDat
                                 >
                                     {row.getVisibleCells().map(cell => (
                                         <TableCell key={cell.id} className={cn(
-                                            "overflow-hidden truncate",
-                                            "max-w-[110px] sm:max-w-[150px] lg:max-w-[180px] xl:max-w-[200px] 2xl:max-w-[240px] 3xl:max-w-full text-gray-800 "
+
+                                            "max-w-[110px] sm:max-w-[150px] lg:max-w-[180px] xl:max-w-[200px] 2xl:max-w-[240px]  text-gray-800 px-1 xl:px-3 py-2"
 
                                         )}>
-                                            <div
+                                            <div className="overflow-x-hidden truncate whitespace-nowrap block  py-2"
                                                 ref={el => {
                                                     if (el) el.setAttribute("title", el.innerText)
                                                 }}

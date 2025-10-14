@@ -2,6 +2,10 @@ import FormsAreas from '@/components/formsAreas'
 import FormsUser from '@/components/formsUser'
 import FormsDenuncia from '@/components/formsDenuncia'
 import FormsArtigos from '@/components/formsArtigos'
+import TabelaAgentes from '@/components/Tabelas/Agentes/Index'
+import TabelaDenuncias from '@/components/Tabelas/Denuncias/Index'
+import TabelaAreaDeVisitas from '@/components/Tabelas/AreasVisita/Index'
+import TabelaArtigos from '@/components/Tabelas/Artigos/Index'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { BellPlus } from 'lucide-react'
@@ -34,9 +38,8 @@ function index() {
             <Button
               key={t.id}
               variant={activeTab === t.id ? 'navactive' : 'nav'}
-              className={`relative flex-1 justify-center rounded-b-none font-medium ${
-                activeTab === t.id ? '' : 'text-muted-foreground'
-              }`}
+              className={`relative flex-1 justify-center rounded-b-none font-medium ${activeTab === t.id ? '' : 'text-muted-foreground'
+                }`}
               onClick={() => setActiveTab(t.id)}
             >
               {t.label}
@@ -53,28 +56,28 @@ function index() {
           className={`${activeTab === 'areas' ? 'flex-col ' : 'hidden'}`}
           aria-hidden={activeTab !== 'areas'}
         >
-          <div className='justify-items-center p-4 rounded-lg bg-white shadow'>Conteúdo de Áreas</div>
+          <div className=' rounded-lg bg-white shadow'><TabelaAreaDeVisitas /></div>
         </div>
 
         <div
           className={`${activeTab === 'agentes' ? 'flex-col ' : 'hidden'}`}
           aria-hidden={activeTab !== 'agentes'}
         >
-          <div className='p-4 rounded-lg bg-white shadow'>Conteúdo de Agentes</div>
+          <div className='rounded-lg bg-white shadow'><TabelaAgentes /></div>
         </div>
 
         <div
           className={`${activeTab === 'denuncias' ? 'flex-col ' : 'hidden'}`}
           aria-hidden={activeTab !== 'denuncias'}
         >
-          <div className='p-4 rounded-lg bg-white shadow'>Conteúdo de Denúncias</div>
+          <div className='rounded-lg bg-white shadow'><TabelaDenuncias /></div>
         </div>
 
         <div
           className={`${activeTab === 'artigos' ? 'flex-col ' : 'hidden'}`}
           aria-hidden={activeTab !== 'artigos'}
         >
-          <div className='p-4 rounded-lg bg-white shadow'>Conteúdo de Artigos</div>
+          <div className='rounded-lg bg-white shadow'><TabelaArtigos /></div>
         </div>
 
         <div
