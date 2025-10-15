@@ -25,15 +25,15 @@ interface TabelaFiltroProps<T extends object> {
   setGlobalFilter: (value: string) => void
   tempFilters: Record<string, string[]>
   setTempFilters: React.Dispatch<React.SetStateAction<Record<string, string[]>>>
-  tempDateRange: [Date | null, Date | null]
-  setTempDateRange: React.Dispatch<React.SetStateAction<[Date | null, Date | null]>>
+  tempDateRange?: [Date | null, Date | null]
+  setTempDateRange?: React.Dispatch<React.SetStateAction<[Date | null, Date | null]>>
   setFilters: React.Dispatch<React.SetStateAction<Record<string, string[]>>>
-  setAppliedDateRange: React.Dispatch<React.SetStateAction<[Date | null, Date | null]>>
+  setAppliedDateRange?: React.Dispatch<React.SetStateAction<[Date | null, Date | null]>>
   uniqueValues: (key: keyof T) => string[]
-  selectedCount: number
-  allSelected: boolean
-  toggleAllSelected: () => void
-  updateStatus: (status: string) => void
+  selectedCount?: number
+  allSelected?: boolean
+  toggleAllSelected?: () => void
+  updateStatus?: (status: string) => void
 }
 
 export default function FiltroTabela<T extends object>({
@@ -53,7 +53,7 @@ export default function FiltroTabela<T extends object>({
 
 const resetFilter = (f: FiltroConfig<T>) =>
     f.type === "date"
-        ? setTempDateRange([null, null])
+        ? setTempDateRange?.([null, null])
         : setTempFilters(prev => ({ ...prev, [f.key as string]: [] }))
 
 const renderFilterControl = (f: FiltroConfig<T>) =>
@@ -65,17 +65,17 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                         <div className="relative w-full">
                             <DatePicker
                                 locale={ptBR}
-                                selected={tempDateRange[i] ?? undefined}
+                                selected={tempDateRange?.[i] ?? undefined}
                                 onChange={d =>
-                                    setTempDateRange(prev =>
+                                    setTempDateRange?.(prev =>
                                         i === 0 ? [d, prev[1]] : [prev[0], d]
                                     )
                                 }
                                 selectsStart={i === 0}
                                 selectsEnd={i === 1}
-                                startDate={tempDateRange[0] ?? undefined}
-                                endDate={tempDateRange[1] ?? undefined}
-                                minDate={i === 1 ? tempDateRange[0] ?? undefined : undefined}
+                                startDate={tempDateRange?.[0] ?? undefined}
+                                endDate={tempDateRange?.[1] ?? undefined}
+                                minDate={i === 1 ? tempDateRange?.[0] ?? undefined : undefined}
                                 placeholderText="Dia/Mês/Ano"
                                 dateFormat="dd/MM/yyyy"
                                 className="w-full border border-gray-300 rounded px-2 py-1 pr-8"
@@ -116,7 +116,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
     return (
         <CardHeader className="flex p-0 items-center justify-between min-w-[320px] w-full">
                 <>
-                    <div className="flex items-center max-w-xs sm:max-w-sm 2xl:max-w-md flex-1 rounded-lg bg-blue-50 border px-2">
+                    <div className="flex items-center max-w-xs sm:max-w-sm 2xl:max-w-md flex-1 rounded-lg bg-blue-50  px-2">
                         <Search className="text-gray-400 w-4 h-4 mr-2" />
                         <Input
                             placeholder="Pesquisar"
@@ -130,7 +130,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                         <DropdownMenuTrigger asChild>
                             <Button
                                 variant="outline"
-                                className="flex text-responsive border-blue-100 border-2 items-center ml-2 gap-2"
+                                className="flex text-fluid-small border-blue-100 border-2 items-center ml-2 gap-2"
                             >
                                 <ListFilter className="w-4 h-4" />
                                 <span> Filtrar por</span>
@@ -138,7 +138,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                             </Button>
                         </DropdownMenuTrigger>
 
-                        <DropdownMenuContent className="text-responsive bg-white p-2 min-w-[280px] max-w-[350px]">
+                        <DropdownMenuContent className="text-fluid-small bg-white p-2 min-w-[280px] max-w-[350px]">
                             {filtros.map(f => (
                                 <div key={String(f.key)} className="space-y-2 p-2 pb-5 border-b border-blue-100">
                                     <div className="flex justify-between items-center">
@@ -155,7 +155,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                                 </div>
                             ))}
 
-                            <div className="flex text-responsive justify-between mt-3 p-2">
+                            <div className="flex text-fluid-small justify-between mt-3 p-2">
                                 <Button
                                     variant="outline"
                                     className="border border-gray-300 hover:bg-gray-100"
@@ -165,7 +165,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                                            if (f.type !== "date") emptyFilters[f.key as string] = []
                                         })
                                         setTempFilters(emptyFilters)
-                                        setTempDateRange([null, null])
+                                        setTempDateRange?.([null, null])
                                     }}
                                 >
                                     Resetar todos
@@ -175,7 +175,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
                                     className="text-white bg-blue-900 hover:bg-blue-800"
                                     onClick={() => {
                                         setFilters({ ...tempFilters })
-                                        setAppliedDateRange(tempDateRange)
+                                        setAppliedDateRange?.(tempDateRange ?? [null, null])
                                         setIsDropdownOpen(false)
                                     }}
                                 >

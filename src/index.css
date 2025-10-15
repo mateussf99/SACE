@@ -21,4 +21,56 @@
 
 
 
+.text-fluid-small {
+  font-size: 0.5rem; 
+}
+
+@media (min-width: 640px) { /* sm */
+  .text-fluid-small {
+    font-size: 0.625rem; 
+  }
+}
+
+
+@media (min-width: 1024px) { /* lg */
+ .text-fluid-small {
+    font-size: 0.75rem; 
+  }
+}
+
+@media (min-width: 1280px) { 
+  .text-fluid-small {
+    font-size: 0.875rem; 
+  }
+}
+
+@media (min-width: 1536px) { 
+  .text-fluid-small {
+    font-size: 1rem; 
+  }
+}
+
+
+
+.text-fluid-large {
+  font-size: 0.75rem; 
+}
+
+@media (min-width:  1024px) { 
+  .text-fluid-large {
+    font-size: 0.875rem; 
+  }
+}
+
+@media (min-width: 1280px) { 
+  .text-fluid-large {
+    font-size: 1rem; 
+  }
+}
+
+@media (min-width: 1536px) { 
+  .text-fluid-large {
+    font-size: 1.125rem; 
+  }
+}
 
