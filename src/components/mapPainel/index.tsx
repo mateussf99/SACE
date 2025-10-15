@@ -2,7 +2,16 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Maximize2, Minimize2, Home, Bot, Cog, Car, Trash2, Leaf } from "lucide-react";
+import { Search, Maximize2, Minimize2 } from "lucide-react";
+import Dengue from "@/assets/dengue.svg";
+import Chikungunya from "@/assets/chikungunya.svg";
+import Zika from "@/assets/zika.svg";
+import Caixa from "@/assets/caixa.svg";
+import Moveis from "@/assets/moveis.svg";
+import Fixos from "@/assets/fixos.svg";
+import Pneus from "@/assets/pneus.svg";
+import Lixos from "@/assets/lixos.svg";
+import Naturais from "@/assets/naturais.svg";
 
 // Tipos
 type Tab = "risks" | "deposits";
@@ -47,9 +56,9 @@ function RisksLegend() {
 
       <div className="border-t pt-5">
         <div className="grid grid-cols-3 gap-4 text-center">
-          <DiseaseStat label="Dengue" value={8} color="text-rose-500" icon="snow" />
-          <DiseaseStat label="Chikungunya" value={5} color="text-sky-600" icon="spark" />
-          <DiseaseStat label="Zika" value={2} color="text-amber-600" icon="sun" />
+          <DiseaseStat label="Dengue" value={8} color="text-[#72777B]" icon={Dengue} />
+          <DiseaseStat label="Chikungunya" value={5} color="text-[#72777B]" icon={Chikungunya} />
+          <DiseaseStat label="Zika" value={2} color="text-[#72777B]" icon={Zika} />
         </div>
       </div>
     </div>
@@ -58,14 +67,16 @@ function RisksLegend() {
 // Tipos de depósitos
 function DepositsLegend() {
   const item = (
-    icon: React.ReactNode,
+    iconSrc: string,
     title: string,
     subtitle: string,
     value: number
   ) => (
-    <div className="flex-col justify-items-center ">
+    <div className="flex-col justify-items-center mb-4">
       <div className="flex-col justify-items-center ">
-        <div className="text-blue">{icon}</div>
+        <div className="text-blue">
+          <img src={iconSrc} alt="" className="h-9 w-9" />
+        </div>
         <div className="flex-col justify-items-center ">
           <div className="font-medium text-gray-600">{title}</div>
           <div className="text-xs text-gray-600">{subtitle}</div>
@@ -77,13 +88,13 @@ function DepositsLegend() {
 
   return (
     <div className="space-y-4">
-      <div className=" grid grid-cols-2 ">
-        {item(<Home className="size-5" />, "A1 e A2", "Armazen. de água", 8)}
-        {item(<Bot className="size-5" />, "B", "Depósitos móveis", 5)}
-        {item(<Cog className="size-5" />, "C", "Depósitos fixos", 2)}
-        {item(<Car className="size-5" />, "D1", "Pneus", 8)}
-        {item(<Trash2 className="size-5" />, "D2", "Lixo e sucata", 5)}
-        {item(<Leaf className="size-5" />, "E", "Naturais", 2)}
+      <div className=" grid grid-cols-3">
+        {item(Caixa, "A1 e A2", "Armazen. de água", 8)}
+        {item(Moveis, "B", "Depósitos móveis", 5)}
+        {item(Fixos, "C", "Depósitos fixos", 2)}
+        {item(Pneus, "D1", "Pneus", 8)}
+        {item(Lixos, "D2", "Lixo e sucata", 5)}
+        {item(Naturais, "E", "Naturais", 2)}
       </div>
     </div>
   );
@@ -93,14 +104,16 @@ function DiseaseStat({
   label,
   value,
   color,
+  icon,
 }: {
   label: string;
   value: number;
   color?: string;
-  icon?: "snow" | "spark" | "sun";
+  icon?: string;
 }) {
   return (
-    <div className="space-y-1 ">
+    <div className="space-y-1 text-center">
+      {icon && <img src={icon} alt={label} className="mx-auto h-9 w-9" />}
       <div className={`text-sm ${color ?? "text-muted-foreground"}`}>{label}</div>
       <div className="text-3xl font-bold tabular-nums">
         {value.toString().padStart(2, "0")}
@@ -113,7 +126,7 @@ function DiseaseStat({
 export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   const [tab, setTab] = useState<Tab>("risks");
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
 
   const triggerSearch = () => {
     const q = query.trim();
