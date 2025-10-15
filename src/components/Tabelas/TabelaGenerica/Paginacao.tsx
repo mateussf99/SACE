@@ -52,9 +52,9 @@ export default function TabelaPaginacao<T extends object>({ table }: TabelaPagin
   }
 
   return (
-    <CardFooter className="flex items-center p-0 justify-between text-sm xl:text-base text-muted-foreground min-w-[330px]">
+    <CardFooter className="flex items-center p-0 justify-between text-sm xl:text-base text-muted-foreground min-w-[330px] text-gray-900">
       <div>
-        <span className="hidden text-responsive sm:inline">Linhas por página: </span>
+        <span className="hidden text-fluid-small md:inline text-gray-900">Linhas por página: </span>
         <select
           className="border text border-blue-200 rounded px-1 py-1"
           value={pageSize}
@@ -70,7 +70,7 @@ export default function TabelaPaginacao<T extends object>({ table }: TabelaPagin
       </div>
 
       <div className="flex items-center gap-1">
-        <span className="text-responsive text-gray-800 hidden sm:inline">Página:</span>
+        <span className="text-fluid-small text-gray-800 hidden sm:inline">Página:</span>
 
         <Button
           size="icon"
