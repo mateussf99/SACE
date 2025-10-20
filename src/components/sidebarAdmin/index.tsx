@@ -40,7 +40,6 @@ export default function SidebarAdmin() {
     >
       <nav className="flex flex-col gap-2 md:gap-3">
         {items.map(item => {
-          // Ativo se pathname for exatamente a rota ou começar com ela (para subpáginas)
           const isActive =
             pathname === item.route ||
             (item.route !== "/" && pathname.startsWith(item.route + "/"))
