@@ -30,7 +30,7 @@ function Index() {
   return (
     <div className="flex items-center justify-between bg-white shadow px-3 md:px-4 h-14 md:h-16">
       <div className="flex items-center md:w-[260px] border-r border-gray-300 py-2 pr-4">
-        <Link to="/" className="flex flex-col">
+        <Link to="/" className="flex-col justify-items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue leading-none">SACE</h1>
           <p className="hidden md:block text-[11px] leading-none mt-1">
             Sistema de Alerta no Controle de Endemias
