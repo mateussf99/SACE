@@ -35,12 +35,11 @@ export default function SidebarAdmin() {
 
   return (
     <aside
-      className="w-70 min-h-screen bg-background p-3 flex flex-col gap-1"
+      className="w-14 md:w-70 min-h-screen bg-background p-2 md:p-3 flex flex-col gap-1"
       aria-label="Menu de administração"
     >
-      <nav className="flex flex-col gap-3">
+      <nav className="flex flex-col gap-2 md:gap-3">
         {items.map(item => {
-          // Ativo se pathname for exatamente a rota ou começar com ela (para subpáginas)
           const isActive =
             pathname === item.route ||
             (item.route !== "/" && pathname.startsWith(item.route + "/"))
@@ -50,12 +49,14 @@ export default function SidebarAdmin() {
             <Button
               key={item.key}
               variant={isActive ? "secondary" : "link"}
-              className="justify-start gap-2 h-10"
+              className="w-full h-10 justify-center md:justify-start gap-0 md:gap-2 px-0 md:px-3"
               onClick={() => handleClick(item)}
               aria-current={isActive ? "page" : undefined}
+              aria-label={item.label}
+              title={item.label}
             >
-              <Icon className="h-4 w-4" />
-              <span className="text-sm">{item.label}</span>
+              <Icon className="h-5 w-5 md:h-4 md:w-4" />
+              <span className="hidden md:inline text-sm">{item.label}</span>
             </Button>
           )
         })}

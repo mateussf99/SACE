@@ -37,7 +37,7 @@ function Index() {
   return (
     <div className="flex shadow bg-white justify-between items-center h-14 md:h-16">
       <div className="flex items-center md:w-[256px] border-r border-gray-300 px-4 py-2">
-        <Link to="/" className="flex-col justify-items-center items-center">
+        <Link to="/" className="flex-col justify-items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue">SACE</h1>
           <div className="hidden md:block">
             <p className="text-[11px]">Sistema de Alerta no Controle de Endemias</p>
