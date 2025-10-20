@@ -4,11 +4,15 @@ import './index.css'
 import 'leaflet/dist/leaflet.css'
 import Routes from './routes/routes'
 import { AuthProvider } from '@/contexts/AuthContext'
+import { PeriodProvider } from "./contexts/PeriodContext";
 
-createRoot(document.getElementById('root')!).render(
+const root = createRoot(document.getElementById('root')!);
+root.render(
   <StrictMode>
     <AuthProvider>
-      <Routes />
+      <PeriodProvider>
+        <Routes />
+      </PeriodProvider>
     </AuthProvider>
   </StrictMode>,
 )
