@@ -13,7 +13,7 @@ import api from "@/services/api";
 import { usePeriod } from "@/contexts/PeriodContext";
 
 function Index() {
-  const { user, accessLevel, logout } = useAuth();
+  const { user, fullName, accessLevel, logout } = useAuth();
   const navigate = useNavigate();
   const { year: selectedYear, cycle: currentCycle, setYear, setCycle } = usePeriod();
   const [yearCycleMap, setYearCycleMap] = useState<Record<number, number[]>>({});
@@ -164,7 +164,7 @@ function Index() {
       {/* Usuário */}
       <div className="flex items-center gap-2 shrink-0 md:w-[240px] lg:w-[300px] border-l border-gray-300 py-2 pl-4">
         <div className="flex-1 text-right min-w-0">
-          <div className="text-sm text-blue-dark leading-tight max-w-[160px] md:max-w-none truncate">{user}</div>
+          <div className="text-sm text-blue-dark leading-tight max-w-[160px] md:max-w-none truncate">{fullName ?? user}</div>
           <div className="text-xs font-semibold text-blue-dark leading-tight hidden sm:block">{accessLevel}</div>
         </div>
         <DropdownMenu>

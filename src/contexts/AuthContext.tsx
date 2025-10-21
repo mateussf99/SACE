@@ -3,8 +3,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 type AuthContextValue = {
   isAuthenticated: boolean
   user: string | null
+  fullName: string | null
   accessLevel: string | null
-  login: (token: string, username: string, accessLevel?: string | null) => Promise<void>
+  login: (token: string, username: string, accessLevel?: string | null, fullName?: string | null) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -13,6 +14,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 const STORAGE_TOKEN_KEY = 'auth_token'
 const STORAGE_USER_KEY = 'auth_user'
 const STORAGE_ACCESS_LEVEL_KEY = 'auth_access_level'
+const STORAGE_FULL_NAME_KEY = 'auth_full_name'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
@@ -32,6 +34,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [accessLevel, setAccessLevel] = useState<string | null>(() => {
     try {
       return localStorage.getItem(STORAGE_ACCESS_LEVEL_KEY)
+    } catch {
+      return null
+    }
+  })
+  const [fullName, setFullName] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(STORAGE_FULL_NAME_KEY)
     } catch {
       return null
     }
@@ -64,21 +73,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [accessLevel])
 
-  const login = useCallback(async (newToken: string, username: string, newAccessLevel?: string | null) => {
-    setToken(newToken)
-    setUser(username)
-    setAccessLevel(newAccessLevel ?? null)
-  }, [])
+  useEffect(() => {
+    try {
+      if (fullName) localStorage.setItem(STORAGE_FULL_NAME_KEY, fullName)
+      else localStorage.removeItem(STORAGE_FULL_NAME_KEY)
+    } catch {
+      // ignorar erros de armazenamento
+    }
+  }, [fullName])
+
+  const login = useCallback(
+    async (newToken: string, username: string, newAccessLevel?: string | null, newFullName?: string | null) => {
+      setToken(newToken)
+      setUser(username)
+      setAccessLevel(newAccessLevel ?? null)
+      setFullName(newFullName ?? null)
+    },
+    []
+  )
 
   const logout = useCallback(async () => {
     setToken(null)
     setUser(null)
     setAccessLevel(null)
+    setFullName(null)
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ isAuthenticated: Boolean(token), user, accessLevel, login, logout }),
-    [token, user, accessLevel, login, logout]
+    () => ({ isAuthenticated: Boolean(token), user, fullName, accessLevel, login, logout }),
+    [token, user, fullName, accessLevel, login, logout]
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
