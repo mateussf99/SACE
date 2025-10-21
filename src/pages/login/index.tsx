@@ -4,13 +4,12 @@ import { authService } from "@/services/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { toast } from "react-toastify";
 
 function index() {
-  // O backend Flask usa 'username' e 'password'. Vamos usar 'username' aqui.
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -18,23 +17,21 @@ function index() {
     e.preventDefault()
     
     if (!username || !password) {
-      setError("Por favor, preencha todos os campos")
+      toast.error("Por favor, preencha todos os campos")
       return
     }
     
     setLoading(true)
-    setError("")
     
     try {
-  const resp = await authService.login(username, password)
-  await login(resp.token, resp.username, resp.nivel_de_acesso, resp.nome_completo)
+      const resp = await authService.login(username, password)
+      await login(resp.token, resp.username, resp.nivel_de_acesso, resp.nome_completo)
+      toast.success("Login realizado com sucesso")
       navigate('/')
     } catch (err: any) {
-      setError(
-        err?.response?.data?.message ||
-        err?.message ||
+      const msg =
         "Falha ao fazer login. Verifique suas credenciais."
-      )
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -47,12 +44,6 @@ function index() {
                 <h1 className="text-3xl text-blue font-bold ">SACE</h1>
                 <h1 className="text-[15px]   mb-5">Sistema de Alerta no Controle de Endemias</h1>
             </div>
-            
-            {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-4">
-                {error}
-              </div>
-            )}
             
             <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
               <div className="">
