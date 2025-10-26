@@ -86,6 +86,16 @@ function Index() {
     }
   }
 
+
+    const statusMap: Record<string, string> = {
+    
+    "inspecionado": "Inspecionado",
+    "tratado": "Tratado",
+    "bloqueado": "Bloqueado",
+    "fechado": "Fechado",
+    "recusado": "Recusado"
+  }
+
   useEffect(() => {
     const load = async () => {
       setLoading(true); setError(null)
@@ -94,8 +104,9 @@ function Index() {
           headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` },
         })
         const resp = res.data
-        const all: RowData[] = Array.isArray(resp) ? resp.map((r: BackendRow) => normalize(r)) : []
+        let all: RowData[] = Array.isArray(resp) ? resp.map((r: BackendRow) => normalize(r)) : []
         // filtro global
+            all = all.filter(r => r.status?.toLowerCase() !== "nao_inspecionado")
         let filtered = globalFilter
           ? all.filter((r) => Object.values(r).some((v) => String(v ?? "").toLowerCase().includes(globalFilter.toLowerCase())))
           : all
@@ -115,8 +126,8 @@ function Index() {
             return isValid(dt) && dt >= dateRange[0]! && dt <= dateRange[1]!
           })
 
-        setTotalRegistros(Array.isArray(resp) ? resp.length : 0)
-        setTotalRows(filtered.length)
+        setTotalRegistros(filtered.length) // total de registros após filtro
+setTotalRows(filtered.length)   
         const start = page.pageIndex * page.pageSize
         setData(filtered.slice(start, start + page.pageSize))
       } catch (e) {
@@ -154,17 +165,23 @@ function Index() {
     { accessorKey: "tipo", header: "Tipo de Imóvel" },
     {
       accessorKey: "status", header: "Status", cell: ({ getValue }) => {
-        const s = getValue() as string
+        // Pega o valor bruto da linha
+        const raw = getValue() as string
+        // Converte pelo mapa, ou mantém o valor se não estiver no mapa
+        const s = statusMap[raw] ?? raw
+
         const cls =
-          s === "Tratado" ? "bg-green-100 text-green-700 border border-green-700" :
-            s === "Visitado" ? "bg-lime-100 text-lime-800 border border-lime-800" :
-              s === "Fechado" ? "bg-yellow-100 text-yellow-700 border border-yellow-700" :
-                s === "Recusado" ? "bg-red-100 text-red-700 border border-red-700" :
-                  "bg-gray-100 text-gray-700 border border-gray-700"
+          s === "Inspecionado" ? "bg-green-100 text-green-700 border border-green-700" :
+          s === "Visitado" ? "bg-lime-100 text-lime-800 border border-lime-800" :
+          s === "Bloqueado" ? "bg-blue-100 text-blue-800 border border-blue-800" :
+          s === "Fechado" ? "bg-yellow-100 text-yellow-700 border border-yellow-700" :
+          s === "Recusado" ? "bg-red-100 text-red-700 border border-red-700" :
+          "bg-gray-100 text-gray-700 border border-gray-700"
+
         return <span className={`px-2 py-1 rounded-md text-xs font-semibold ${cls}`}>{s}</span>
       }
     },
-    { accessorKey: "data", header: "Data da Visita" },
+   // { accessorKey: "data", header: "Data da Visita" },
     { accessorKey: "atividade", header: "Atividades Realizadas" },
     { id: "acoes", header: "Ações", cell: ({ row }) => <AcoesCell row={row} />, size: 60 },
   ], [])

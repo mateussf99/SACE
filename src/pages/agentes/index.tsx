@@ -1,7 +1,8 @@
 "use client"
 import TabelaImoveisVisitados from '@/components/Tabelas/ImoveisVisitados/Index'
+import TabelaNaoVisitado from "@/components/Tabelas/ImoveisN-Visitados/Index"
 
- function Index() {
+function Index() {
   return (
     <div className="bg-secondary h-full mt-2 flex flex-col gap-4">
 
@@ -9,16 +10,21 @@ import TabelaImoveisVisitados from '@/components/Tabelas/ImoveisVisitados/Index'
 
       <div className="w-full px-5">
         <h2 className="text-xl font-semibold mb-2 text-primary">
-          Imóveis visitados
         </h2>
       </div>
+      <div className="w-full flex flex-col gap-6 px-4 pb-4">
+        <div className="rounded-lg bg-white shadow">
+          <TabelaNaoVisitado />
 
+        </div>
+      </div>
       <div className="w-full flex flex-col gap-6 px-4 pb-4">
         <div className="rounded-lg bg-white shadow">
           <TabelaImoveisVisitados />
         </div>
       </div>
-      
+
+
     </div>
   )
 }
