@@ -70,7 +70,7 @@ export function Index({
 
   return (
     <Card
-      className={`overflow-auto min-w-[240px] h-full p-3 mb:p-5 xl:p-8 border-none ${
+      className={`overflow-auto min-w-[240px] h-full p-3 mb:p-5 border-none ${
         bgColor ? "text-white" : ""
       }`}
       style={{
@@ -81,7 +81,7 @@ export function Index({
     >
       <CardHeader className="flex justify-between p-2 h-auto">
         <div className="flex flex-col flex-1 space-y-2">
-          <CardTitle className="text-xs md:text-sm lg:text-xl xl:text-2xl font-medium">
+          <CardTitle className="text-fluid-large font-medium">
             {safeSubtitle
               ? safeTitle
               : safeTitle.split(" ").map((word, idx) => (
@@ -97,7 +97,7 @@ export function Index({
             </span>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-3">
             <span className="text-5xl max-[400px]:text-2xl font-bold">
               {formatValue(safeCurrent)}
             </span>

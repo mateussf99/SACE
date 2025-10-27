@@ -10,6 +10,8 @@ import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 // --- TIPAGEM ---
 export type Artigo = {
@@ -48,9 +50,33 @@ function Index() {
   const [totalRows, setTotalRows] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+    const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmDescription, setConfirmDescription] = useState("")
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => { })
 
   const uniqueValues = (key: keyof RowData) =>
     Array.from(new Set(data.map(r => r[key]).filter(Boolean))).map(String)
+
+  const confirmDelete = (action: () => void, description = "Deseja realmente excluir?") => {
+    setConfirmAction(() => action); setConfirmDescription(description); setConfirmOpen(true)
+  }
+
+  
+  const deletarAreas = async (ids: number[]) => {
+    if (!ids.length) return
+    try {
+      const { data } = await api.delete("", { data: { ids } })  /// adicionar metodo ao delete
+      return data
+    } catch (e: any) {
+      const msg: Record<number, string> = {
+        400: "Requisição inválida. IDs não enviados corretamente.",
+        401: "Não autenticado.", 403: "Acesso proibido. Apenas supervisores podem deletar.",
+        404: "Uma ou mais áreas de visita não foram encontradas."
+      }
+      alert(msg[e.response?.status] || "Erro interno do servidor."); throw e
+    }
+  }
+
 
   // --- BUSCA DE DADOS ---
   useEffect(() => {
@@ -129,14 +155,14 @@ function Index() {
         ) : (
           <>
             <button className="p-1 hover:text-green-700" onClick={abrir}>
-              <Eye className="w-4 h-4" />
-            </button>
-            <button className="p-1 hover:text-blue-500" onClick={() => handle("Editar")}>
               <Edit className="w-4 h-4" />
             </button>
-            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => handle("Excluir")}>
-              <Trash2 className="w-4 h-4" />
-            </button>
+         <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
+              try {
+                const resp = await deletarAreas([row.original.id!]); alert(resp.message)
+                setData(p => p.filter(d => d.id !== row.original.id)); toggle()
+              } catch (e) { console.error(e) }
+            }, "Deseja realmente excluir esta área?")}><Trash2 className="w-4 h-4" /></button>
             <button className="p-1 hover:text-gray-600" onClick={toggle}>
               <X className="w-4 h-4" />
             </button>
@@ -148,7 +174,17 @@ function Index() {
 
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
     { accessorKey: "id", header: "ID" },
-    { accessorKey: "titulo", header: () => <span className="font-bold">Título</span>, cell: ({ getValue }) => <span className="font-semibold text-gray-700">{getValue() as string}</span> },
+    { accessorKey: "titulo", header: () => <span className="font-bold">Título</span>, cell: ({ row, getValue }) => (
+        <span
+          className="font-semibold cursor-pointer hover:underline"
+          onClick={() => {
+            setSelectedId(row.original.id ?? null)
+            setIsModalOpen(true)
+          }}
+        >
+          {getValue() as string}
+        </span>
+      ) },
     { accessorKey: "descricao", header: "Descrição" },
     { accessorKey: "supervisor", header: "Supervisor" },
     { accessorKey: "data", header: "Data de criação" },
@@ -208,6 +244,20 @@ function Index() {
           <TabelaPaginacao<RowData> table={table} />
         </>
       )}
+
+ <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto">
+          <DialogHeader><DialogTitle className="text-lg font-semibold">Confirmação</DialogTitle>
+            <DialogDescription className="text-gray-700">{confirmDescription}</DialogDescription></DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancelar</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" variant="destructive"
+              onClick={() => { confirmAction(); setConfirmOpen(false) }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
 
       <ModalDetalhes<Artigo>
         id={selectedId}

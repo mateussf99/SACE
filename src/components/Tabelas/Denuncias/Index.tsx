@@ -18,6 +18,8 @@ import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
 
 export type Denuncia = {
   denuncia_id?: number
@@ -65,9 +67,50 @@ function Index() {
   const [totalRows, setTotalRows] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => { })
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmDescription, setConfirmDescription] = useState("")
+  const [agentesOptions, setAgentesOptions] = useState<string[]>([])
+
+  const confirmDelete = (action: () => void, description = "Deseja realmente excluir?") => {
+    setConfirmAction(() => action); setConfirmDescription(description); setConfirmOpen(true)
+  }
+  const fieldLabels: Record<string, string> = {
+    denuncia_id: "ID",
+    data_denuncia: "Data",
+    hora_denuncia: "Hora",
+    bairro: "Bairro",
+    rua_avenida: "Rua / Avenida",
+    numero: "Número",
+    endereco_complemento: "Complemento",
+    tipo_imovel: "Tipo de Imóvel",
+    observacoes: "Observações",
+    nome_completo: "Agente Responsável",
+    arquivos: "Arquivos",
+  }
+
+  const deletarAreas = async (id: number[]) => {
+    if (!id.length) return
+    try {
+       const { data } = await api.delete(`/denuncia/${id}`)  /// adicionar metodo ao delete
+      return data
+    } catch (e: any) {
+      const msg: Record<number, string> = {
+        400: "Requisição inválida. IDs não enviados corretamente.",
+        401: "Não autenticado.", 403: "Acesso proibido. Apenas supervisores podem deletar.",
+        404: "Uma ou mais áreas de visita não foram encontradas."
+      }
+      alert(msg[e.response?.status] || "Erro interno do servidor."); throw e
+    }
+  }
 
   const uniqValues = (key: keyof RowData) =>
     Array.from(new Set(data.map((r) => r[key]).filter(Boolean))).map(String)
+  useEffect(() => {
+    api.get("/usuarios", { headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` } })
+      .then(res => setAgentesOptions(res.data.agentes.map((a: any) => a.nome_completo)))
+      .catch(err => console.error("Erro ao buscar agentes:", err))
+  }, [])
 
   useEffect(() => {
     const carregar = async () => {
@@ -134,14 +177,14 @@ function Index() {
         ) : (
           <>
             <button className="p-1 hover:text-green-700" onClick={() => { toggle(); if (row.original.id) { setSelectedId(row.original.id); setIsModalOpen(true) } }}>
-              <Eye className="w-4 h-4" />
-            </button>
-            <button className="p-1 hover:text-blue-500" onClick={() => { console.log("Editar", row.original); toggle() }}>
               <Edit className="w-4 h-4" />
             </button>
-            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => { console.log("Excluir", row.original); toggle() }}>
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
+              try {
+                const resp = await deletarAreas([row.original.id!]); alert(resp.message)
+                setData(p => p.filter(d => d.id !== row.original.id)); toggle()
+              } catch (e) { console.error(e) }
+            }, "Deseja realmente excluir esta área?")}><Trash2 className="w-4 h-4" /></button>
             <button className="p-1 hover:text-gray-600" onClick={toggle}>
               <X className="w-4 h-4" />
             </button>
@@ -155,9 +198,29 @@ function Index() {
     { accessorKey: "id", header: "ID" },
     { accessorKey: "data", header: "Data" },
     { accessorKey: "municipio", header: "Município" },
-    { accessorKey: "endereco", header: () => <span className="font-bold">Endereço</span>, cell: ({ getValue }) => <span className="font-semibold text-gray-700">{getValue() as string}</span> },
+    {
+      accessorKey: "endereco", header: () => <span className="font-bold">Endereço</span>, cell: ({ row, getValue }) => (
+        <span
+          className="font-semibold cursor-pointer hover:underline"
+          onClick={() => {
+            setSelectedId(row.original.id ?? null)
+            setIsModalOpen(true)
+          }}
+        >
+          {getValue() as string}
+        </span>
+      )
+    },
     { accessorKey: "agente", header: "Agente responsável" },
-    { accessorKey: "status", header: "Status" },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ getValue }) => (
+        <span className="px-2 py-1 rounded-md text-xs font-semibold bg-red-100 text-red-700 border border-red-700">
+          {getValue() as string}
+        </span>
+      )
+    },
     { id: "acoes", header: "Ações", cell: ({ row }) => <AcoesCell row={row} />, size: 60 },
   ], [])
 
@@ -188,27 +251,20 @@ function Index() {
   ]
 
   const renderField = (field: keyof Denuncia, value: any) => {
-    const labels: Record<string, string> = {
-      denuncia_id: "ID",
-      data_denuncia: "Data",
-      hora_denuncia: "Hora",
-      bairro: "Bairro",
-      rua_avenida: "Rua / Avenida",
-      numero: "Número",
-      endereco_complemento: "Complemento",
-      tipo_imovel: "Tipo de Imóvel",
-      observacoes: "Observações",
-      nome_completo: "Agente Responsável",
-      arquivos: "Arquivos",
+    // Caso especial: arquivos
+    if (field === "arquivos" && Array.isArray(value)) {
+      return value.map(a => <div key={a.arquivo_denuncia_id}>{a.arquivo_nome}</div>)
     }
-    if (field === "arquivos" && Array.isArray(value))
-      return value.map((a) => <div key={a.arquivo_denuncia_id}>{a.arquivo_nome}</div>)
+
+
     return (
       <div>
-        <strong>{labels[field] ?? String(field)}:</strong> {String(value ?? "Não informado")}
+        <strong>{fieldLabels[field as string] ?? String(field)}:</strong>{" "}
+        {String(value ?? "Não informado")}
       </div>
     )
   }
+
 
   return (
     <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
@@ -225,7 +281,7 @@ function Index() {
         uniqueValues={uniqValues}
         selectedCount={0}
         allSelected={false}
-        toggleAllSelected={() => {}}
+        toggleAllSelected={() => { }}
       />
 
       {loading ? (
@@ -238,6 +294,19 @@ function Index() {
           <TabelaPaginacao<RowData> table={table} />
         </>
       )}
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto">
+          <DialogHeader><DialogTitle className="text-lg font-semibold">Confirmação</DialogTitle>
+            <DialogDescription className="text-gray-700">{confirmDescription}</DialogDescription></DialogHeader>
+          <DialogFooter className="flex justify-end gap-2 mt-4">
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancelar</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" variant="destructive"
+              onClick={() => { confirmAction(); setConfirmOpen(false) }}>Confirmar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <ModalDetalhes<Denuncia>
         id={selectedId}
@@ -256,8 +325,12 @@ function Index() {
           "arquivos",
         ]}
         open={isModalOpen}
+        editableFields={["nome_completo"]}
+        selectFields={["nome_completo"]}
+        selectOptions={{ nome_completo: agentesOptions }}
         onOpenChange={setIsModalOpen}
         renderField={renderField}
+        fieldLabels={fieldLabels}
       />
     </Card>
   )
