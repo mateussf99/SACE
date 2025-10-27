@@ -3,6 +3,9 @@ import { PieChart, Pie, Cell, Label, ResponsiveContainer } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer } from "@/components/ui/chart"
 import type { ChartConfig } from "@/components/ui/chart"
+import { useState } from "react"
+import { Tooltip, Sector } from "recharts"
+import type { PieSectorDataItem } from "recharts/types/polar/Pie"
 
 export type DataItem = { name: string; value: number; color?: string }
 type CenterNumbers = { worked?: number; total: number; centerText?: string }
@@ -24,6 +27,7 @@ function Index({
   const worked = Number.isFinite(centerNumbers.worked) && centerNumbers.worked! >= 0 ? centerNumbers.worked : undefined
   const centerText = centerNumbers.centerText?.toString().trim() || undefined
   const hasWorked = worked !== undefined
+  const [activeIndex, setActiveIndex] = useState<number | null>(null)
 
   const safeData = data
     .filter(d => d && typeof d.name === "string" && Number.isFinite(d.value))
@@ -99,20 +103,41 @@ function Index({
       <CardContent className="w-full h-full p-0">
         <div className="flex items-center justify-between gap-2 flex-col sm:flex-row h-full">
           <ChartContainer config={config} className="flex-1 max-w-full aspect-square min-w-[150px] sm:flex-[0_1_60%]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={chartData} dataKey="value" cx="50%" cy="50%" startAngle={270} endAngle={-90} innerRadius="65%" outerRadius="90%">
-                  {chartData.map(entry => (
-                    <Cell key={entry.name} fill={entry.color!} />
-                  ))}
-                  <Label content={({ viewBox }) =>
-                    viewBox && "cx" in viewBox && "cy" in viewBox
-                      ? <CenterLabel cx={viewBox.cx!} cy={viewBox.cy!} />
-                      : null
-                  } />
-                </Pie>
-              </PieChart>
-            </ResponsiveContainer>
+          <ResponsiveContainer width="100%" height="100%">
+  <PieChart>
+    {/* Tooltip do Recharts */}
+    <Tooltip
+      formatter={(value: number, name: string) => [`${value}`, name]} // mostra valor + nome
+      wrapperStyle={{ fontSize: "0.875rem" }}
+    />
+
+    <Pie
+      data={chartData}
+      dataKey="value"
+      cx="50%"
+      cy="50%"
+      startAngle={270}
+      endAngle={-90}
+      innerRadius="65%"
+      outerRadius="90%"
+      activeIndex={activeIndex ?? undefined}  // efeito apenas no hover
+      activeShape={(props: PieSectorDataItem) => (
+    <Sector {...props} outerRadius={Number(props.outerRadius) + 10} />
+  )}
+      onMouseEnter={(_, index) => setActiveIndex(index)}  // define fatia ativa ao passar o mouse
+      onMouseLeave={() => setActiveIndex(null)}          // remove efeito ao sair
+    >
+      {chartData.map(entry => (
+        <Cell key={entry.name} fill={entry.color!} />
+      ))}
+      <Label content={({ viewBox }) =>
+        viewBox && "cx" in viewBox && "cy" in viewBox
+          ? <CenterLabel cx={viewBox.cx!} cy={viewBox.cy!} />
+          : null
+      } />
+    </Pie>
+  </PieChart>
+</ResponsiveContainer>
           </ChartContainer>
 
           <div className="hidden sm:block"><Legend items={safeData} /></div>
