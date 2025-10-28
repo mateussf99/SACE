@@ -28,6 +28,10 @@ export interface RiskZone {
   focos_encontrados: number;
   total_casos_confirmados: number;
   cor?: 'vermelha' | 'laranja' | 'amarela' | 'preta';
+  // novos campos (mantendo snake_case como vem da API)
+  casos_dengue?: number;
+  casos_zika?: number;
+  casos_chikungunya?: number;
 }
 
 // Ícone padrão (CDN)
@@ -169,6 +173,9 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
           cor={z.cor ?? 'vermelha'}
           casosConfirmados={z.total_casos_confirmados}
           focosEncontrados={z.focos_encontrados}
+          casosDengue={z.casos_dengue}
+          casosZika={z.casos_zika}
+          casosChikungunya={z.casos_chikungunya}
           radiusMeters={1000}
         />
       ))}

@@ -11,10 +11,13 @@ type ZonaCalorProps = {
   extensaoKm2?: number
   casosConfirmados: number
   focosEncontrados: number
+  // novos campos
+  casosDengue?: number
+  casosZika?: number
+  casosChikungunya?: number
   cor?: ZonaCor
   lat: number
   lon: number
-  // size (px) foi substituído por radiusMeters (m) para evitar crescer na tela ao dar zoom
   radiusMeters?: number
   className?: string
 }
@@ -31,6 +34,10 @@ function ZonaCalor({
   descricao = 'Alta concentração de casos, risco elevado de transmissão.',
   casosConfirmados,
   focosEncontrados,
+  // novos campos
+  casosDengue,
+  casosZika,
+  casosChikungunya,
   cor = 'vermelha',
   lat,
   lon,
@@ -163,6 +170,18 @@ function ZonaCalor({
               <div className="flex flex-col rounded-md p-3 border sm:col-span-2">
                 <p className="text-xs text-muted-foreground">Focos encontrados</p>
                 <p className="font-semibold">{focosEncontrados}</p>
+              </div>
+              <div className="flex flex-col rounded-md p-3 border">
+                <p className="text-xs text-muted-foreground">Casos de Dengue</p>
+                <p className="font-semibold">{casosDengue ?? 0}</p>
+              </div>
+              <div className="flex flex-col rounded-md p-3 border">
+                <p className="text-xs text-muted-foreground">Casos de Zika</p>
+                <p className="font-semibold">{casosZika ?? 0}</p>
+              </div>
+              <div className="flex flex-col rounded-md p-3 border">
+                <p className="text-xs text-muted-foreground">Casos de Chikungunya</p>
+                <p className="font-semibold">{casosChikungunya ?? 0}</p>
               </div>
             </div>
           </div>

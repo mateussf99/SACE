@@ -54,7 +54,11 @@ function RisksLegend() {
         <LineItem dot="#facc15" label="Amarela (Atenção)" value={4} />
       </div>
 
-      <div className="border-t pt-5">
+      <div className="flex-col border-t pt-5 justify-items-center">
+        
+        <h2 className="font-bold text-blue-dark">
+          Total de casos por doença do município
+        </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
           <DiseaseStat label="Dengue" value={8} color="text-[#72777B]" icon={Dengue} />
           <DiseaseStat label="Chikungunya" value={5} color="text-[#72777B]" icon={Chikungunya} />
