@@ -2,8 +2,10 @@ import { MapContainer, TileLayer, useMap, Marker, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
+import ZonaCalor from '../zona';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+
 
 // Centro padrão: Maceió, Alagoas
 const DEFAULT_CENTER: [number, number] = [-9.64985, -35.70895];
@@ -13,8 +15,19 @@ interface MapProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
-  autoLocateOnLoad?: boolean; // tenta localizar ao montar
-  flyTo?: [number, number] | null; // alvo externo para voar
+  autoLocateOnLoad?: boolean;
+  flyTo?: [number, number] | null;
+  zones?: RiskZone[]; // <- dados da API
+}
+
+export interface RiskZone {
+  area_de_visita_id: number;
+  latitude: number;
+  longitude: number;
+  bairro?: string;
+  focos_encontrados: number;
+  total_casos_confirmados: number;
+  cor?: 'vermelha' | 'laranja' | 'amarela' | 'preta';
 }
 
 // Ícone padrão (CDN)
@@ -68,7 +81,7 @@ function GeoLayers({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
 }
 
 // Componente principal
-export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null }: MapProps) {
+export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null, zones = [] }: MapProps) {
   const geo = useUserLocation();
   const [scope, setScope] = useState<'municipio' | 'estado' | null>(null);
   const [originAddr, setOriginAddr] = useState<{ city?: string; state?: string } | null>(null);
@@ -138,12 +151,28 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
       className={className}
       style={{ height: '100%', width: '100%' }}
       scrollWheelZoom
+      markerZoomAnimation={false}   // <- ícones não “crescem” durante o zoom
+      zoomAnimation={false}         // <- remove escala durante a animação de zoom
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
       />
       <GeoLayers geo={geo} />
+      {/* Zonas vindas da API */}
+      {zones.map(z => (
+        <ZonaCalor
+          key={z.area_de_visita_id}
+          lat={z.latitude}
+          lon={z.longitude}
+          titulo={z.bairro}
+          cor={z.cor ?? 'vermelha'}
+          casosConfirmados={z.total_casos_confirmados}
+          focosEncontrados={z.focos_encontrados}
+          // size={300}
+          radiusMeters={1000}
+        />
+      ))}
       {/* Controle de escopo (Município / Estado) */}
       <ScopeController scope={scope} setScope={setScope} geo={geo} />
       {/* Reage a mudanças externas de alvo */}

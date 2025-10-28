@@ -17,6 +17,17 @@ async function geocodeNominatim(query: string): Promise<[number, number] | null>
   }
   return null;
 }
+const zonas = [
+  {
+    area_de_visita_id: 1,
+    latitude: -9.65891,
+    longitude: -35.70129,
+    bairro: 'Ponta Verde',
+    focos_encontrados: 25,
+    total_casos_confirmados: 6,
+  },
+];
+
 
 function index() {
   const [flyTo, setFlyTo] = useState<[number, number] | null>(null);
@@ -27,7 +38,7 @@ function index() {
   };
   return (
     <div className="relative w-full h-[calc(100svh-4rem)] md:h-[calc(100svh-4rem)]">
-      <Map className="w-full h-full" flyTo={flyTo} />
+      <Map className="w-full h-full" flyTo={flyTo} zones={zonas} />
       <MapPanel onSearch={handleSearch} />
     </div>
   )
