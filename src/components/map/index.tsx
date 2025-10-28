@@ -169,7 +169,6 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
           cor={z.cor ?? 'vermelha'}
           casosConfirmados={z.total_casos_confirmados}
           focosEncontrados={z.focos_encontrados}
-          // size={300}
           radiusMeters={1000}
         />
       ))}
