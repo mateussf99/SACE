@@ -6,7 +6,8 @@ import {
   User,
   ShieldUser,
 } from "lucide-react"
-import { useLocation, useNavigate } from "react-router-dom" // <— adicionado
+import { useLocation, useNavigate } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext" // novo
 
 type Item = {
   key: string
@@ -25,6 +26,7 @@ const items: Item[] = [
 export default function SidebarAdmin() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { accessLevel } = useAuth()
 
   const handleClick = useCallback((item: Item) => {
     navigate(item.route)
@@ -33,13 +35,17 @@ export default function SidebarAdmin() {
   // pathname atual
   const { pathname } = location
 
+  // Apenas 'admin' ou 'supervisor' enxergam o item de Administração
+  const canSeeAdmin = ["admin", "supervisor"].includes((accessLevel ?? "").toLowerCase())
+  const visibleItems = items.filter((i) => i.key !== "admin" || canSeeAdmin)
+
   return (
     <aside
       className="w-14 md:w-70 min-h-screen bg-background p-2 md:p-3 flex flex-col gap-1"
       aria-label="Menu de administração"
     >
       <nav className="flex flex-col gap-2 md:gap-3">
-        {items.map(item => {
+        {visibleItems.map(item => {
           const isActive =
             pathname === item.route ||
             (item.route !== "/" && pathname.startsWith(item.route + "/"))

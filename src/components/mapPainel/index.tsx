@@ -12,9 +12,34 @@ import Fixos from "@/assets/fixos.svg";
 import Pneus from "@/assets/pneus.svg";
 import Lixos from "@/assets/lixos.svg";
 import Naturais from "@/assets/naturais.svg";
+import { usePeriod } from "@/contexts/PeriodContext";
+import api from "@/services/api"; // <- ADDED
 
 // Tipos
 type Tab = "risks" | "deposits";
+
+type DashboardSummary = {
+  depositos: {
+    a1: number;
+    a2: number;
+    b: number;
+    c: number;
+    d1: number;
+    d2: number;
+    e: number;
+  };
+  casos_confirmados: {
+    dengue: number;
+    zika: number;
+    chikungunya: number;
+  };
+  areas_risco: {
+    Preta: number;
+    Vermelha: number;
+    Laranja: number;
+    Amarela: number;
+  };
+};
 
 export interface MapPanelProps {
   className?: string;
@@ -43,33 +68,42 @@ function LineItem({ dot, label, value }: { dot: string; label: string; value: nu
   );
 }
 
-
-function RisksLegend() {
+function RisksLegend({
+  risks,
+  diseases,
+}: {
+  risks: { preta: number; vermelha: number; laranja: number; amarela: number };
+  diseases: { dengue: number; chikungunya: number; zika: number };
+}) {
   return (
     <div className="space-y-5">
       <div className="space-y-3 gap-2 grid grid-cols-2">
-        <LineItem dot="#0b0b0b" label="Preta (Emergência)" value={2} />
-        <LineItem dot="#ef4444" label="Vermelha (Perigo)" value={7} />
-        <LineItem dot="#f59e0b" label="Laranja (Alerta)" value={3} />
-        <LineItem dot="#facc15" label="Amarela (Atenção)" value={4} />
+        <LineItem dot="#0b0b0b" label="Preta (Emergência)" value={risks.preta} />
+        <LineItem dot="#ef4444" label="Vermelha (Perigo)" value={risks.vermelha} />
+        <LineItem dot="#f59e0b" label="Laranja (Alerta)" value={risks.laranja} />
+        <LineItem dot="#facc15" label="Amarela (Atenção)" value={risks.amarela} />
       </div>
 
       <div className="flex-col border-t pt-5 justify-items-center">
-        
         <h2 className="font-bold text-blue-dark">
           Total de casos por doença do município
         </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
-          <DiseaseStat label="Dengue" value={8} color="text-[#72777B]" icon={Dengue} />
-          <DiseaseStat label="Chikungunya" value={5} color="text-[#72777B]" icon={Chikungunya} />
-          <DiseaseStat label="Zika" value={2} color="text-[#72777B]" icon={Zika} />
+          <DiseaseStat label="Dengue" value={diseases.dengue} color="text-[#72777B]" icon={Dengue} />
+          <DiseaseStat label="Chikungunya" value={diseases.chikungunya} color="text-[#72777B]" icon={Chikungunya} />
+          <DiseaseStat label="Zika" value={diseases.zika} color="text-[#72777B]" icon={Zika} />
         </div>
       </div>
     </div>
   );
 }
+
 // Tipos de depósitos
-function DepositsLegend() {
+function DepositsLegend({
+  depositos,
+}: {
+  depositos: { a1a2: number; b: number; c: number; d1: number; d2: number; e: number };
+}) {
   const item = (
     iconSrc: string,
     title: string,
@@ -93,12 +127,12 @@ function DepositsLegend() {
   return (
     <div className="space-y-4">
       <div className=" grid grid-cols-3">
-        {item(Caixa, "A1 e A2", "Armazen. de água", 8)}
-        {item(Moveis, "B", "Depósitos móveis", 5)}
-        {item(Fixos, "C", "Depósitos fixos", 2)}
-        {item(Pneus, "D1", "Pneus", 8)}
-        {item(Lixos, "D2", "Lixo e sucata", 5)}
-        {item(Naturais, "E", "Naturais", 2)}
+        {item(Caixa, "A1 e A2", "Armazen. de água", depositos.a1a2)}
+        {item(Moveis, "B", "Depósitos móveis", depositos.b)}
+        {item(Fixos, "C", "Depósitos fixos", depositos.c)}
+        {item(Pneus, "D1", "Pneus", depositos.d1)}
+        {item(Lixos, "D2", "Lixo e sucata", depositos.d2)}
+        {item(Naturais, "E", "Naturais", depositos.e)}
       </div>
     </div>
   );
@@ -130,16 +164,56 @@ function DiseaseStat({
 export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   const [tab, setTab] = useState<Tab>("risks");
   const [query, setQuery] = useState("");
+  const { year, cycle } = usePeriod();
   const [expanded, setExpanded] = useState<boolean>(() => {
     // md do Tailwind = min-width: 768px
     if (typeof window === "undefined") return true; // fallback seguro
     return window.matchMedia("(min-width: 768px)").matches;
   });
 
+  const [summary, setSummary] = useState<DashboardSummary | null>(null); // <- ADDED
+  const [loading, setLoading] = useState<boolean>(false); // <- ADDED
+
   // Notifica mudanças de layout para reposicionar o dialog ancorado da zona de calor
   useEffect(() => {
     window.dispatchEvent(new Event("map-panel-layout"));
   }, [expanded]);
+
+  // Fetch do resumo do dashboard (logado: ano/ciclo, anônimo: latest)
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchSummary = async () => {
+      setLoading(true);
+      try {
+        const isLoggedIn = (() => {
+          try {
+            return !!localStorage.getItem("auth_token");
+          } catch {
+            return false;
+          }
+        })();
+
+        const endpoint =
+          isLoggedIn && year != null && cycle != null
+            ? `/dashboard_summary/${year}/${cycle}`
+            : `/dashboard_summary/latest`;
+
+        const { data } = await api.get<DashboardSummary>(endpoint);
+        if (!cancelled) setSummary(data);
+      } catch (err) {
+        if (!cancelled) setSummary(null);
+        // opcional: console.error(err);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    fetchSummary();
+    return () => {
+      cancelled = true;
+    };
+  }, [year, cycle]);
 
   const triggerSearch = () => {
     const q = query.trim();
@@ -147,13 +221,35 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
     onSearch?.(q);
   };
 
-  return (
-  <div
-    id="map-panel" // <- âncora para o dialog
-    className={`absolute border-none left-3 top-15 md:top-15 lg:top-3 z-[1100] w-[300px] md:w-[360px] max-w-[92vw] transition-all duration-200 ${className}`}
-  >
-    <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
+  // Deriva valores com fallback para 0
+  const risksData = {
+    preta: summary?.areas_risco.Preta ?? 0,
+    vermelha: summary?.areas_risco.Vermelha ?? 0,
+    laranja: summary?.areas_risco.Laranja ?? 0,
+    amarela: summary?.areas_risco.Amarela ?? 0,
+  };
 
+  const diseasesData = {
+    dengue: summary?.casos_confirmados.dengue ?? 0,
+    chikungunya: summary?.casos_confirmados.chikungunya ?? 0,
+    zika: summary?.casos_confirmados.zika ?? 0,
+  };
+
+  const depositsData = {
+    a1a2: (summary?.depositos.a1 ?? 0) + (summary?.depositos.a2 ?? 0),
+    b: summary?.depositos.b ?? 0,
+    c: summary?.depositos.c ?? 0,
+    d1: summary?.depositos.d1 ?? 0,
+    d2: summary?.depositos.d2 ?? 0,
+    e: summary?.depositos.e ?? 0,
+  };
+
+  return (
+    <div
+      id="map-panel"
+      className={`absolute border-none left-3 top-15 md:top-15 lg:top-3 z-[1100] w-[300px] md:w-[360px] max-w-[92vw] transition-all duration-200 ${className}`}
+    >
+      <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
         <CardHeader className="gap-3">
           <div className="relative flex items-center gap-2">
             <div className="pointer-events-none absolute left-3 text-muted-foreground">
@@ -198,7 +294,11 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
 
         {expanded && (
           <CardContent className="space-y-5">
-            {tab === "risks" ? <RisksLegend /> : <DepositsLegend />}
+            {tab === "risks" ? (
+              <RisksLegend risks={risksData} diseases={diseasesData} />
+            ) : (
+              <DepositsLegend depositos={depositsData} />
+            )}
           </CardContent>
         )}
       </Card>
