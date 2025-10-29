@@ -23,7 +23,7 @@ async function geocodeNominatim(query: string): Promise<[number, number] | null>
 
 type HeatmapZona = {
   area_de_visita_id: number;
-  latitude: number;
+  latitude: number; // pode vir string; coerção é feita no Map
   longitude: number;
   bairro: string;
   casos_dengue?: number;
@@ -31,7 +31,7 @@ type HeatmapZona = {
   casos_chikungunya?: number;
   focos_encontrados: number;
   total_casos_confirmados: number;
-  
+  nivel_risco?: string; // novo campo vindo da API
 };
 
 function index() {
@@ -48,7 +48,7 @@ function index() {
         const y = Number(year);
         const c = Number(cycle);
 
-        let url = "/heatmap_data";
+        let url = "/heatmap_data/latest";
         if (token && Number.isFinite(y) && Number.isFinite(c)) {
           url = `/heatmap_data/${y}/${c}`;
         }

@@ -75,10 +75,15 @@ function ZonaCalor({
     const anchor = document.getElementById('map-panel')
     const onTransitionEnd = () => updatePosition()
     anchor?.addEventListener('transitionend', onTransitionEnd)
+
+    // Atualiza a posição a cada 5 segundos enquanto o dialog estiver aberto
+    const intervalId = window.setInterval(updatePosition, 5000)
+
     return () => {
       window.removeEventListener('resize', onResizeOrScroll)
       window.removeEventListener('scroll', onResizeOrScroll, true)
       anchor?.removeEventListener('transitionend', onTransitionEnd)
+      window.clearInterval(intervalId)
     }
   }, [open])
 

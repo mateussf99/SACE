@@ -22,13 +22,12 @@ interface MapProps {
 
 export interface RiskZone {
   area_de_visita_id: number;
-  latitude: number;
-  longitude: number;
+  latitude: number | string;
+  longitude: number | string;
   bairro?: string;
   focos_encontrados: number;
   total_casos_confirmados: number;
-  cor?: 'vermelha' | 'laranja' | 'amarela' | 'preta';
-  // novos campos (mantendo snake_case como vem da API)
+  nivel_risco?: string; // novo: cor vem daqui
   casos_dengue?: number;
   casos_zika?: number;
   casos_chikungunya?: number;
@@ -164,21 +163,28 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
       />
       <GeoLayers geo={geo} />
       {/* Zonas vindas da API */}
-      {zones.map(z => (
-        <ZonaCalor
-          key={z.area_de_visita_id}
-          lat={z.latitude}
-          lon={z.longitude}
-          titulo={z.bairro}
-          cor={z.cor ?? 'vermelha'}
-          casosConfirmados={z.total_casos_confirmados}
-          focosEncontrados={z.focos_encontrados}
-          casosDengue={z.casos_dengue}
-          casosZika={z.casos_zika}
-          casosChikungunya={z.casos_chikungunya}
-          radiusMeters={1000}
-        />
-      ))}
+      {zones.map(z => {
+        const cor = mapNivelRiscoToCor(z.nivel_risco);
+        const lat = Number(z.latitude);
+        const lon = Number(z.longitude);
+        if (!cor || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+        return (
+          <ZonaCalor
+            key={z.area_de_visita_id}
+            lat={lat}
+            lon={lon}
+            titulo={z.bairro}
+            cor={cor}
+            casosConfirmados={z.total_casos_confirmados}
+            focosEncontrados={z.focos_encontrados}
+            casosDengue={z.casos_dengue}
+            casosZika={z.casos_zika}
+            casosChikungunya={z.casos_chikungunya}
+            radiusMeters={1000}
+          />
+        );
+      })}
       {/* Controle de escopo (Município / Estado) */}
       <ScopeController scope={scope} setScope={setScope} geo={geo} />
       {/* Reage a mudanças externas de alvo */}
@@ -302,4 +308,15 @@ function ScopeController({ scope, setScope, geo }: ScopeControllerProps) {
       </div>
     </div>
   );
+}
+
+function mapNivelRiscoToCor(n?: string): 'vermelha' | 'laranja' | 'amarela' | 'preta' | null {
+  if (!n) return null;
+  const s = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  if (s === 'normal') return null;        // não renderiza zona
+  if (s.startsWith('vermelh')) return 'vermelha';
+  if (s.startsWith('laranja')) return 'laranja';
+  if (s.startsWith('amarel')) return 'amarela';
+  if (s.startsWith('preto') || s.startsWith('preta')) return 'preta';
+  return null;
 }
