@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -130,7 +130,16 @@ function DiseaseStat({
 export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   const [tab, setTab] = useState<Tab>("risks");
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    // md do Tailwind = min-width: 768px
+    if (typeof window === "undefined") return true; // fallback seguro
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
+
+  // Notifica mudanças de layout para reposicionar o dialog ancorado da zona de calor
+  useEffect(() => {
+    window.dispatchEvent(new Event("map-panel-layout"));
+  }, [expanded]);
 
   const triggerSearch = () => {
     const q = query.trim();

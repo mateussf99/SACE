@@ -76,6 +76,10 @@ function ZonaCalor({
     const onTransitionEnd = () => updatePosition()
     anchor?.addEventListener('transitionend', onTransitionEnd)
 
+    // Ouve mudanças do painel (expandir/recolher)
+    const onPanelLayout: EventListener = () => updatePosition()
+    window.addEventListener('map-panel-layout', onPanelLayout)
+
     // Atualiza a posição a cada 5 segundos enquanto o dialog estiver aberto
     const intervalId = window.setInterval(updatePosition, 5000)
 
@@ -83,6 +87,7 @@ function ZonaCalor({
       window.removeEventListener('resize', onResizeOrScroll)
       window.removeEventListener('scroll', onResizeOrScroll, true)
       anchor?.removeEventListener('transitionend', onTransitionEnd)
+      window.removeEventListener('map-panel-layout', onPanelLayout)
       window.clearInterval(intervalId)
     }
   }, [open])
