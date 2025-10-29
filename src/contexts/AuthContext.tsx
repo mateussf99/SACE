@@ -15,6 +15,7 @@ const STORAGE_TOKEN_KEY = 'auth_token'
 const STORAGE_USER_KEY = 'auth_user'
 const STORAGE_ACCESS_LEVEL_KEY = 'auth_access_level'
 const STORAGE_FULL_NAME_KEY = 'auth_full_name'
+const STORAGE_AGENT_ID_KEY = 'agente_id' // novo
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [token, setToken] = useState<string | null>(() => {
@@ -97,6 +98,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null)
     setAccessLevel(null)
     setFullName(null)
+    // limpa agente_id no logout
+    try {
+      localStorage.removeItem(STORAGE_AGENT_ID_KEY)
+    } catch {
+      // ignorar erros de armazenamento
+    }
   }, [])
 
   const value = useMemo<AuthContextValue>(
