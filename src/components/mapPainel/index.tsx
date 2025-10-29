@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,7 +54,11 @@ function RisksLegend() {
         <LineItem dot="#facc15" label="Amarela (Atenção)" value={4} />
       </div>
 
-      <div className="border-t pt-5">
+      <div className="flex-col border-t pt-5 justify-items-center">
+        
+        <h2 className="font-bold text-blue-dark">
+          Total de casos por doença do município
+        </h2>
         <div className="grid grid-cols-3 gap-4 text-center">
           <DiseaseStat label="Dengue" value={8} color="text-[#72777B]" icon={Dengue} />
           <DiseaseStat label="Chikungunya" value={5} color="text-[#72777B]" icon={Chikungunya} />
@@ -126,7 +130,16 @@ function DiseaseStat({
 export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   const [tab, setTab] = useState<Tab>("risks");
   const [query, setQuery] = useState("");
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState<boolean>(() => {
+    // md do Tailwind = min-width: 768px
+    if (typeof window === "undefined") return true; // fallback seguro
+    return window.matchMedia("(min-width: 768px)").matches;
+  });
+
+  // Notifica mudanças de layout para reposicionar o dialog ancorado da zona de calor
+  useEffect(() => {
+    window.dispatchEvent(new Event("map-panel-layout"));
+  }, [expanded]);
 
   const triggerSearch = () => {
     const q = query.trim();
@@ -135,8 +148,11 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   };
 
   return (
-  <div className={`absolute border-none left-3 top-15 md:top-15 lg:top-3 z-[1100] w-[380px] max-w-[92vw] transition-all duration-200 ${className}`}>
-      <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
+  <div
+    id="map-panel" // <- âncora para o dialog
+    className={`absolute border-none left-3 top-15 md:top-15 lg:top-3 z-[1100] w-[300px] md:w-[360px] max-w-[92vw] transition-all duration-200 ${className}`}
+  >
+    <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
 
         <CardHeader className="gap-3">
           <div className="relative flex items-center gap-2">

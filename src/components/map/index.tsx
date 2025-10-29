@@ -2,8 +2,10 @@ import { MapContainer, TileLayer, useMap, Marker, Circle } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useEffect, useState } from 'react';
 import L from 'leaflet';
+import ZonaCalor from '../zona';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
+
 
 // Centro padrão: Maceió, Alagoas
 const DEFAULT_CENTER: [number, number] = [-9.64985, -35.70895];
@@ -13,8 +15,22 @@ interface MapProps {
   center?: [number, number];
   zoom?: number;
   className?: string;
-  autoLocateOnLoad?: boolean; // tenta localizar ao montar
-  flyTo?: [number, number] | null; // alvo externo para voar
+  autoLocateOnLoad?: boolean;
+  flyTo?: [number, number] | null;
+  zones?: RiskZone[]; // <- dados da API
+}
+
+export interface RiskZone {
+  area_de_visita_id: number;
+  latitude: number | string;
+  longitude: number | string;
+  bairro?: string;
+  focos_encontrados: number;
+  total_casos_confirmados: number;
+  nivel_risco?: string; // novo: cor vem daqui
+  casos_dengue?: number;
+  casos_zika?: number;
+  casos_chikungunya?: number;
 }
 
 // Ícone padrão (CDN)
@@ -68,7 +84,7 @@ function GeoLayers({ geo }: { geo: ReturnType<typeof useUserLocation>; }) {
 }
 
 // Componente principal
-export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null }: MapProps) {
+export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLocateOnLoad = false, flyTo = null, zones = [] }: MapProps) {
   const geo = useUserLocation();
   const [scope, setScope] = useState<'municipio' | 'estado' | null>(null);
   const [originAddr, setOriginAddr] = useState<{ city?: string; state?: string } | null>(null);
@@ -138,12 +154,37 @@ export function Map({ center = DEFAULT_CENTER, zoom = 12, className = '', autoLo
       className={className}
       style={{ height: '100%', width: '100%' }}
       scrollWheelZoom
+      markerZoomAnimation={false}   // <- ícones não “crescem” durante o zoom
+      zoomAnimation={false}         // <- remove escala durante a animação de zoom
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url='https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
       />
       <GeoLayers geo={geo} />
+      {/* Zonas vindas da API */}
+      {zones.map(z => {
+        const cor = mapNivelRiscoToCor(z.nivel_risco);
+        const lat = Number(z.latitude);
+        const lon = Number(z.longitude);
+        if (!cor || !Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+
+        return (
+          <ZonaCalor
+            key={z.area_de_visita_id}
+            lat={lat}
+            lon={lon}
+            titulo={z.bairro}
+            cor={cor}
+            casosConfirmados={z.total_casos_confirmados}
+            focosEncontrados={z.focos_encontrados}
+            casosDengue={z.casos_dengue}
+            casosZika={z.casos_zika}
+            casosChikungunya={z.casos_chikungunya}
+            radiusMeters={1000}
+          />
+        );
+      })}
       {/* Controle de escopo (Município / Estado) */}
       <ScopeController scope={scope} setScope={setScope} geo={geo} />
       {/* Reage a mudanças externas de alvo */}
@@ -267,4 +308,15 @@ function ScopeController({ scope, setScope, geo }: ScopeControllerProps) {
       </div>
     </div>
   );
+}
+
+function mapNivelRiscoToCor(n?: string): 'vermelha' | 'laranja' | 'amarela' | 'preta' | null {
+  if (!n) return null;
+  const s = n.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  if (s === 'normal') return null;        // não renderiza zona
+  if (s.startsWith('vermelh')) return 'vermelha';
+  if (s.startsWith('laranja')) return 'laranja';
+  if (s.startsWith('amarel')) return 'amarela';
+  if (s.startsWith('preto') || s.startsWith('preta')) return 'preta';
+  return null;
 }
