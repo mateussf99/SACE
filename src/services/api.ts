@@ -27,11 +27,23 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 
-type LoginResponse = { token: string; username: string; nome_completo: string; nivel_de_acesso?: string };
+type LoginResponse = { token: string; username: string; nome_completo: string; nivel_de_acesso?: string; agente_id?: number };
 
 const authService = {
   async login(username: string, password: string): Promise<LoginResponse> {
     const { data } = await api.post<LoginResponse>('/login', { username, password });
+
+    // salva agente_id somente se for agente
+    try {
+      if (data.nivel_de_acesso?.toLowerCase() === 'agente' && data.agente_id != null) {
+        localStorage.setItem('agente_id', String(data.agente_id));
+      } else {
+        localStorage.removeItem('agente_id');
+      }
+    } catch {
+      // ignorar erros de storage
+    }
+
     return data;
   },
 };
