@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { Circle, FeatureGroup } from 'react-leaflet'
-import { Flame, TriangleAlert, X } from 'lucide-react'
+import { TriangleAlert, X } from 'lucide-react'
 import { createPortal } from 'react-dom'
 
 type ZonaCor = 'vermelha' | 'laranja' | 'amarela' | 'preta'
@@ -11,7 +11,6 @@ type ZonaCalorProps = {
   extensaoKm2?: number
   casosConfirmados: number
   focosEncontrados: number
-  // novos campos
   casosDengue?: number
   casosZika?: number
   casosChikungunya?: number
@@ -23,7 +22,7 @@ type ZonaCalorProps = {
 }
 
 const colorMap: Record<ZonaCor, { rgb: string; ring: string; label: string; icon: React.ReactNode }> = {
-  vermelha: { rgb: '239,68,68', ring: '#b91c1c', label: 'Zona vermelha (Perigo)', icon: <Flame className="h-5 w-5 text-red-600" /> },
+  vermelha: { rgb: '239,68,68', ring: '#b91c1c', label: 'Zona vermelha (Perigo)', icon: <TriangleAlert className="h-5 w-5 text-red-600" /> },
   laranja: { rgb: '245,158,11', ring: '#d97706', label: 'Zona laranja (Alerta)', icon: <TriangleAlert className="h-5 w-5 text-amber-600" /> },
   amarela: { rgb: '234,179,8', ring: '#ca8a04', label: 'Zona amarela (Atenção)', icon: <TriangleAlert className="h-5 w-5 text-yellow-600" /> },
   preta:   { rgb: '17,24,39', ring: '#111827', label: 'Zona preta (Emergência)', icon: <TriangleAlert className="h-5 w-5 text-gray-900" /> },
@@ -31,10 +30,9 @@ const colorMap: Record<ZonaCor, { rgb: string; ring: string; label: string; icon
 
 function ZonaCalor({
   titulo,
-  descricao = 'Alta concentração de casos, risco elevado de transmissão.',
+  descricao,
   casosConfirmados,
   focosEncontrados,
-  // novos campos
   casosDengue,
   casosZika,
   casosChikungunya,
@@ -46,6 +44,15 @@ function ZonaCalor({
   const [open, setOpen] = useState(false)
   const { rgb, ring, label, icon } = colorMap[cor]
   const headingId = useId()
+
+  const defaultDescriptions: Record<ZonaCor, string> = {
+    vermelha: 'Alta concentração de casos, risco elevado de transmissão.',
+    laranja: 'Concentração moderada de casos, adicional monitoramento recomendado.',
+    amarela: 'Baixa concentração de casos, atenção às medidas preventivas.',
+    preta: 'Situação crítica: emergência sanitária, medidas imediatas necessárias.',
+  }
+
+  const computedDescricao = descricao ?? defaultDescriptions[cor]
 
   // posição ancorada ao MapPanel
   const [panelPos, setPanelPos] = useState<{ top: number; left: number; width: number }>({
@@ -75,8 +82,6 @@ function ZonaCalor({
     const anchor = document.getElementById('map-panel')
     const onTransitionEnd = () => updatePosition()
     anchor?.addEventListener('transitionend', onTransitionEnd)
-
-    // Ouve mudanças do painel (expandir/recolher)
     const onPanelLayout: EventListener = () => updatePosition()
     window.addEventListener('map-panel-layout', onPanelLayout)
 
@@ -168,30 +173,35 @@ function ZonaCalor({
                 {icon}
                 {titulo ?? label}
               </h2>
-              <p className="text-sm text-muted-foreground">{descricao}</p>
+              <p className="text-sm text-muted-foreground">{computedDescricao}</p>
             </div>
 
-            <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="flex flex-col rounded-md p-3 border">
-                <p className="text-xs text-muted-foreground">Casos confirmados</p>
-                <p className="font-semibold">{casosConfirmados}</p>
+            <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className='flex gap-2 grid-cols-1 sm:grid-cols-2 sm:col-span-3'>
+                <div className="flex-col p-3 ">
+                  <p className="text-xs text-muted-foreground">Casos confirmados</p>
+                  <p className="font-semibold">{casosConfirmados}</p>
+                </div>
+                <div className="flex-col p-3  sm:col-span-2">
+                  <p className="text-xs text-muted-foreground">Focos encontrados</p>
+                  <p className="font-semibold">{focosEncontrados}</p>
+                </div>
               </div>
-              <div className="flex flex-col rounded-md p-3 border sm:col-span-2">
-                <p className="text-xs text-muted-foreground">Focos encontrados</p>
-                <p className="font-semibold">{focosEncontrados}</p>
+              <div className='flex gap-2 grid-cols-1 sm:grid-cols-3 sm:col-span-3'>
+                <div className="flex-col p-3 ">
+                  <p className="text-xs text-muted-foreground">Casos de Dengue</p>
+                  <p className="font-semibold">{casosDengue ?? 0}</p>
+                </div>
+                <div className="flex-col p-3 ">
+                  <p className="text-xs text-muted-foreground">Casos de Zika</p>
+                  <p className="font-semibold">{casosZika ?? 0}</p>
+                </div>
+                <div className="flex-col p-3 ">
+                  <p className="text-xs text-muted-foreground">Casos de Chikungunya</p>
+                  <p className="font-semibold">{casosChikungunya ?? 0}</p>
+                </div>
               </div>
-              <div className="flex flex-col rounded-md p-3 border">
-                <p className="text-xs text-muted-foreground">Casos de Dengue</p>
-                <p className="font-semibold">{casosDengue ?? 0}</p>
-              </div>
-              <div className="flex flex-col rounded-md p-3 border">
-                <p className="text-xs text-muted-foreground">Casos de Zika</p>
-                <p className="font-semibold">{casosZika ?? 0}</p>
-              </div>
-              <div className="flex flex-col rounded-md p-3 border">
-                <p className="text-xs text-muted-foreground">Casos de Chikungunya</p>
-                <p className="font-semibold">{casosChikungunya ?? 0}</p>
-              </div>
+              
             </div>
           </div>
         </>,
