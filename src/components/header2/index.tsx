@@ -5,13 +5,119 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Plus, Check } from "lucide-react";
+import { ChevronDown, Plus, Check, TriangleAlert, X } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import api from "@/services/api";
 import { usePeriod } from "@/contexts/PeriodContext";
 import { toast } from "react-toastify";
+import { createPortal } from "react-dom";
+
+// Popover de confirmação ancorado a um botão (estilo do ZonaCalor com portal e posicionamento dinâmico)
+function ConfirmPopover({
+  anchorRef,
+  open,
+  onClose,
+  title,
+  description,
+  confirmText = "Confirmar",
+  cancelText = "Cancelar",
+  confirmClassName = "bg-blue text-white hover:bg-blue/90",
+  onConfirm,
+  loading = false,
+}: {
+  anchorRef: React.RefObject<HTMLElement>;
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  description?: string;
+  confirmText?: string;
+  cancelText?: string;
+  confirmClassName?: string;
+  onConfirm: () => void;
+  loading?: boolean;
+}) {
+  const [pos, setPos] = useState<{ top: number; left: number; width: number }>({
+    top: 0,
+    left: 0,
+    width: 360,
+  });
+
+  const updatePosition = useCallback(() => {
+    const el = anchorRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const width = 360;
+    const vw = window.innerWidth;
+    const left = Math.min(Math.max(8, rect.left), vw - width - 8);
+    const top = rect.bottom + 8;
+    setPos({ top, left, width });
+  }, [anchorRef]);
+
+  useEffect(() => {
+    if (!open) return;
+    updatePosition();
+    const onResizeOrScroll = () => updatePosition();
+    window.addEventListener("resize", onResizeOrScroll);
+    window.addEventListener("scroll", onResizeOrScroll, true);
+    return () => {
+      window.removeEventListener("resize", onResizeOrScroll);
+      window.removeEventListener("scroll", onResizeOrScroll, true);
+    };
+  }, [open, updatePosition]);
+
+  if (!open) return null;
+
+  return createPortal(
+    <>
+      {/* Overlay para fechar ao clicar fora */}
+      <button
+        aria-label="Fechar confirmação"
+        className="fixed inset-0 z-[3000] bg-transparent"
+        onClick={onClose}
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed z-[3001] bg-white rounded-2xl p-4 shadow-lg outline-none"
+        style={{ top: pos.top, left: pos.left, width: pos.width, maxWidth: "92vw" }}
+      >
+        <button
+          aria-label="Fechar"
+          onClick={onClose}
+          className="absolute right-4 top-4 rounded-sm opacity-70 transition hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div className="flex items-start gap-3">
+          <TriangleAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold">{title}</h3>
+            {description ? (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="mt-4 flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            {cancelText}
+          </Button>
+          <Button
+            className={`${confirmClassName} disabled:opacity-60`}
+            onClick={onConfirm}
+            disabled={loading}
+          >
+            {loading ? "Processando..." : confirmText}
+          </Button>
+        </div>
+      </div>
+    </>,
+    document.body
+  );
+}
 
 function Index() {
   const { user, fullName, accessLevel, logout } = useAuth();
@@ -31,6 +137,14 @@ function Index() {
   // loading das ações
   const [finalizeLoading, setFinalizeLoading] = useState(false);
   const [createLoading, setCreateLoading] = useState(false);
+
+  // confirmações (popover)
+  const [finalizeConfirmOpen, setFinalizeConfirmOpen] = useState(false);
+  const [createConfirmOpen, setCreateConfirmOpen] = useState(false);
+
+  // refs dos botões (âncora do popover)
+  const finalizeBtnRef = useRef<HTMLButtonElement>(null);
+  const createBtnRef = useRef<HTMLButtonElement>(null);
 
   const canManageCycles = useMemo(
     () => ["supervisor", "admin"].includes((accessLevel ?? "").toLowerCase()),
@@ -69,13 +183,9 @@ function Index() {
   }, [setYear, setCycle]);
 
   useEffect(() => {
-    let mounted = true;
     (async () => {
       await fetchYearsCycles();
     })();
-    return () => {
-      mounted = false;
-    };
   }, [fetchYearsCycles]);
 
   // Atualiza ciclos ao trocar o ano selecionado
@@ -113,16 +223,18 @@ function Index() {
     checkCycleStatus();
   }, [checkCycleStatus, selectedYear, currentCycle]);
 
-  const handleFinalizeCycle = async () => {
+  // Confirmar finalização (após diálogo)
+  const confirmFinalizeCycle = async () => {
     if (!activeCycleInfo?.ciclo_id) {
       toast.error("Nenhum ciclo ativo para finalizar");
       return;
     }
     setFinalizeLoading(true);
     try {
-      // Ajuste a rota/payload conforme o backend
-      await api.post("/ciclos/finalizar", { ciclo_id: activeCycleInfo.ciclo_id });
-      toast.success(`Ciclo ${activeCycleInfo.ciclo_numero} (${activeCycleInfo.ano}) finalizado`);
+      // POST /finalizar_ciclo (sem payload)
+      const { data } = await api.post("/finalizar_ciclo");
+      toast.success(String(data?.message ?? `Ciclo ${activeCycleInfo.ciclo_numero} (${activeCycleInfo.ano}) finalizado`));
+      setFinalizeConfirmOpen(false);
       await checkCycleStatus();
       await fetchYearsCycles();
     } catch (e: any) {
@@ -133,17 +245,14 @@ function Index() {
     }
   };
 
-  const handleCreateCycle = async () => {
-    const targetYear = currentYearForCycles ?? latestYear;
-    if (targetYear == null) {
-      toast.error("Ano alvo não definido para criar ciclo");
-      return;
-    }
+  // Confirmar criação (após diálogo)
+  const confirmCreateCycle = async () => {
     setCreateLoading(true);
     try {
-      // Ajuste a rota/payload conforme o backend
-      await api.post("/ciclos/criar", { ano: targetYear });
-      toast.success(`Novo ciclo criado para ${targetYear}`);
+      // POST /criar_ciclo (sem payload)
+      const { data } = await api.post("/criar_ciclo");
+      toast.success(String(data?.message ?? "Novo ciclo criado"));
+      setCreateConfirmOpen(false);
       await fetchYearsCycles();
       await checkCycleStatus();
     } catch (e: any) {
@@ -228,6 +337,7 @@ function Index() {
         {canManageCycles && (
           <>
             <Button
+              ref={finalizeBtnRef}
               className={`${
                 finalizeEnabled
                   ? "bg-blue text-white hover:bg-blue/90"
@@ -235,7 +345,7 @@ function Index() {
               } disabled:opacity-60`}
               aria-label="Finalizar ciclo"
               aria-busy={finalizeLoading || checkingCycleStatus}
-              onClick={handleFinalizeCycle}
+              onClick={() => setFinalizeConfirmOpen(true)}
               disabled={checkingCycleStatus || finalizeLoading || !hasActiveCycle}
               title={
                 checkingCycleStatus
@@ -252,6 +362,7 @@ function Index() {
             </Button>
 
             <Button
+              ref={createBtnRef}
               className={`${
                 createEnabled
                   ? "bg-blue text-white hover:bg-blue/90"
@@ -259,7 +370,7 @@ function Index() {
               } disabled:opacity-60`}
               aria-label="Criar novo ciclo"
               aria-busy={createLoading || checkingCycleStatus}
-              onClick={handleCreateCycle}
+              onClick={() => setCreateConfirmOpen(true)}
               disabled={checkingCycleStatus || createLoading || hasActiveCycle == null || hasActiveCycle}
               title={
                 checkingCycleStatus
@@ -274,6 +385,36 @@ function Index() {
                 {createLoading ? "Criando..." : "Criar Novo Ciclo"}
               </p>
             </Button>
+
+            {/* Popover: Finalizar ciclo */}
+            <ConfirmPopover
+              anchorRef={finalizeBtnRef as React.RefObject<HTMLElement>}
+              open={finalizeConfirmOpen}
+              onClose={() => setFinalizeConfirmOpen(false)}
+              title="Finalizar ciclo"
+              description={
+                activeCycleInfo
+                  ? `Você está prestes a finalizar o ciclo ${activeCycleInfo.ciclo_numero} (${activeCycleInfo.ano}). Essa ação desativa o ciclo atual. Deseja continuar?`
+                  : "Você está prestes a finalizar o ciclo ativo. Essa ação desativa o ciclo atual. Deseja continuar?"
+              }
+              confirmText={finalizeLoading ? "Finalizando..." : "Confirmar"}
+              confirmClassName="bg-red-600 text-white hover:bg-red-700"
+              onConfirm={confirmFinalizeCycle}
+              loading={finalizeLoading}
+            />
+
+            {/* Popover: Criar ciclo */}
+            <ConfirmPopover
+              anchorRef={createBtnRef as React.RefObject<HTMLElement>}
+              open={createConfirmOpen}
+              onClose={() => setCreateConfirmOpen(false)}
+              title="Criar novo ciclo"
+              description="Será criado um novo ciclo. Confirma a criação?"
+              confirmText={createLoading ? "Criando..." : "Confirmar"}
+              confirmClassName="bg-blue text-white hover:bg-blue/90"
+              onConfirm={confirmCreateCycle}
+              loading={createLoading}
+            />
           </>
         )}
       </div>
