@@ -152,8 +152,16 @@ function Index() {
   );
 
   // estilos dinâmicos dos botões conforme status
-  const finalizeEnabled = !!hasActiveCycle && !checkingCycleStatus && !finalizeLoading;
-  const createEnabled = hasActiveCycle === false && !checkingCycleStatus && !createLoading;
+  const matchesActiveFilter =
+    !!activeCycleInfo &&
+    selectedYear === activeCycleInfo.ano &&
+    currentCycle === activeCycleInfo.ciclo_numero;
+
+  const finalizeEnabled =
+    !!hasActiveCycle && matchesActiveFilter && !checkingCycleStatus && !finalizeLoading;
+
+  const createEnabled =
+    hasActiveCycle === false && !checkingCycleStatus && !createLoading;
 
   // Carrega anos/ciclos
   const fetchYearsCycles = useCallback(async () => {
@@ -346,13 +354,20 @@ function Index() {
               aria-label="Finalizar ciclo"
               aria-busy={finalizeLoading || checkingCycleStatus}
               onClick={() => setFinalizeConfirmOpen(true)}
-              disabled={checkingCycleStatus || finalizeLoading || !hasActiveCycle}
+              disabled={
+                checkingCycleStatus ||
+                finalizeLoading ||
+                !hasActiveCycle ||
+                !matchesActiveFilter
+              }
               title={
                 checkingCycleStatus
                   ? "Verificando status do ciclo..."
-                  : hasActiveCycle
-                  ? "Finalizar ciclo ativo"
-                  : "Nenhum ciclo ativo para finalizar"
+                  : !hasActiveCycle
+                  ? "Nenhum ciclo ativo para finalizar"
+                  : !matchesActiveFilter
+                  ? "Selecione o ano e o ciclo ativo para finalizar"
+                  : "Finalizar ciclo ativo"
               }
             >
               <Check className="size-4" />
