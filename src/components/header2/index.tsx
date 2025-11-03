@@ -8,59 +8,75 @@ import {
 import { ChevronDown, Plus, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "@/services/api";
 import { usePeriod } from "@/contexts/PeriodContext";
+import { toast } from "react-toastify";
 
 function Index() {
   const { user, fullName, accessLevel, logout } = useAuth();
   const navigate = useNavigate();
   const { year: selectedYear, cycle: currentCycle, setYear, setCycle } = usePeriod();
+
   const [yearCycleMap, setYearCycleMap] = useState<Record<number, number[]>>({});
   const [years, setYears] = useState<number[]>([]);
   const [latestYear, setLatestYear] = useState<number | null>(null);
-
   const [currentYearForCycles, setCurrentYearForCycles] = useState<number | null>(null);
+
+  // status do ciclo
+  const [checkingCycleStatus, setCheckingCycleStatus] = useState<boolean>(false);
+  const [hasActiveCycle, setHasActiveCycle] = useState<boolean | null>(null);
+  const [activeCycleInfo, setActiveCycleInfo] = useState<{ ciclo_id: number; ano: number; ciclo_numero: number } | null>(null);
+
+  // loading das ações
+  const [finalizeLoading, setFinalizeLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
 
   const canManageCycles = useMemo(
     () => ["supervisor", "admin"].includes((accessLevel ?? "").toLowerCase()),
     [accessLevel]
   );
 
-  // Busca anos/ciclos dentro do Header
+  // estilos dinâmicos dos botões conforme status
+  const finalizeEnabled = !!hasActiveCycle && !checkingCycleStatus && !finalizeLoading;
+  const createEnabled = hasActiveCycle === false && !checkingCycleStatus && !createLoading;
+
+  // Carrega anos/ciclos
+  const fetchYearsCycles = useCallback(async () => {
+    try {
+      const { data } = await api.get<Record<string, number[]>>("/anos_ciclos");
+      const map: Record<number, number[]> = {};
+      Object.entries(data ?? {}).forEach(([y, cycles]) => {
+        map[Number(y)] = (cycles ?? []).slice().sort((a, b) => a - b);
+      });
+
+      const sortedYears = Object.keys(map).map(Number).sort((a, b) => b - a);
+      const ly = sortedYears[0] ?? null;
+
+      setYearCycleMap(map);
+      setYears(sortedYears);
+      setLatestYear(ly);
+
+      // maior ano e maior ciclo como valores iniciais
+      setYear(ly);
+      const latestCycle = ly != null && map[ly]?.length ? Math.max(...map[ly]) : null;
+      setCycle(latestCycle);
+      setCurrentYearForCycles(ly);
+    } catch (e) {
+      console.error("Erro ao carregar anos/ciclos:", e);
+      toast.error("Erro ao carregar anos e ciclos");
+    }
+  }, [setYear, setCycle]);
+
   useEffect(() => {
     let mounted = true;
     (async () => {
-      try {
-        const { data } = await api.get<Record<string, number[]>>("/anos_ciclos");
-        if (!mounted) return;
-
-        const map: Record<number, number[]> = {};
-        Object.entries(data ?? {}).forEach(([y, cycles]) => {
-          map[Number(y)] = (cycles ?? []).slice().sort((a, b) => a - b);
-        });
-
-        const sortedYears = Object.keys(map).map(Number).sort((a, b) => b - a);
-        const ly = sortedYears[0] ?? null;
-
-        setYearCycleMap(map);
-        setYears(sortedYears);
-        setLatestYear(ly);
-
-        // maior ano e maior ciclo como valores iniciais (no Contexto)
-        setYear(ly);
-        const latestCycle = ly != null && map[ly]?.length ? Math.max(...map[ly]) : null;
-        setCycle(latestCycle);
-
-        setCurrentYearForCycles(ly);
-      } catch (e) {
-        console.error("Erro ao carregar anos/ciclos:", e);
-      }
+      await fetchYearsCycles();
     })();
     return () => {
       mounted = false;
     };
-  }, [setYear, setCycle]);
+  }, [fetchYearsCycles]);
 
   // Atualiza ciclos ao trocar o ano selecionado
   useEffect(() => {
@@ -73,6 +89,70 @@ function Index() {
       setCycle(null);
     }
   }, [selectedYear, latestYear, yearCycleMap, setCycle]);
+
+  // Checar status do ciclo
+  const checkCycleStatus = useCallback(async () => {
+    setCheckingCycleStatus(true);
+    try {
+      const { data } = await api.get("/ciclos/status");
+      const status = String(data?.status ?? "").toLowerCase();
+      const isActive = status === "ativo";
+      setHasActiveCycle(isActive);
+      setActiveCycleInfo(isActive ? data?.detalhes ?? null : null);
+    } catch (e) {
+      console.error("Erro ao checar status do ciclo:", e);
+      setHasActiveCycle(null);
+      setActiveCycleInfo(null);
+      toast.error("Erro ao checar status do ciclo");
+    } finally {
+      setCheckingCycleStatus(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkCycleStatus();
+  }, [checkCycleStatus, selectedYear, currentCycle]);
+
+  const handleFinalizeCycle = async () => {
+    if (!activeCycleInfo?.ciclo_id) {
+      toast.error("Nenhum ciclo ativo para finalizar");
+      return;
+    }
+    setFinalizeLoading(true);
+    try {
+      // Ajuste a rota/payload conforme o backend
+      await api.post("/ciclos/finalizar", { ciclo_id: activeCycleInfo.ciclo_id });
+      toast.success(`Ciclo ${activeCycleInfo.ciclo_numero} (${activeCycleInfo.ano}) finalizado`);
+      await checkCycleStatus();
+      await fetchYearsCycles();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.response?.data?.message ?? "Falha ao finalizar ciclo");
+    } finally {
+      setFinalizeLoading(false);
+    }
+  };
+
+  const handleCreateCycle = async () => {
+    const targetYear = currentYearForCycles ?? latestYear;
+    if (targetYear == null) {
+      toast.error("Ano alvo não definido para criar ciclo");
+      return;
+    }
+    setCreateLoading(true);
+    try {
+      // Ajuste a rota/payload conforme o backend
+      await api.post("/ciclos/criar", { ano: targetYear });
+      toast.success(`Novo ciclo criado para ${targetYear}`);
+      await fetchYearsCycles();
+      await checkCycleStatus();
+    } catch (e: any) {
+      console.error(e);
+      toast.error(e?.response?.data?.message ?? "Falha ao criar ciclo");
+    } finally {
+      setCreateLoading(false);
+    }
+  };
 
   const cyclesForActiveYear = useMemo(
     () => (currentYearForCycles != null ? yearCycleMap[currentYearForCycles] ?? [] : []),
@@ -95,7 +175,6 @@ function Index() {
         </Link>
       </div>
 
-      
       <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto whitespace-nowrap min-w-0 px-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -148,14 +227,52 @@ function Index() {
         {/* Ações */}
         {canManageCycles && (
           <>
-            <Button className="bg-blue/10 text-blue-dark hover:bg-blue/20" aria-label="Finalizar ciclo">
+            <Button
+              className={`${
+                finalizeEnabled
+                  ? "bg-blue text-white hover:bg-blue/90"
+                  : "bg-gray-200 text-gray-500 hover:bg-gray-200"
+              } disabled:opacity-60`}
+              aria-label="Finalizar ciclo"
+              aria-busy={finalizeLoading || checkingCycleStatus}
+              onClick={handleFinalizeCycle}
+              disabled={checkingCycleStatus || finalizeLoading || !hasActiveCycle}
+              title={
+                checkingCycleStatus
+                  ? "Verificando status do ciclo..."
+                  : hasActiveCycle
+                  ? "Finalizar ciclo ativo"
+                  : "Nenhum ciclo ativo para finalizar"
+              }
+            >
               <Check className="size-4" />
-              <p className="hidden lg:inline ml-2">Finalizar Ciclo</p>
+              <p className="hidden lg:inline ml-2">
+                {finalizeLoading ? "Finalizando..." : "Finalizar Ciclo"}
+              </p>
             </Button>
 
-            <Button className="bg-blue text-white hover:bg-blue/90" aria-label="Criar novo ciclo">
+            <Button
+              className={`${
+                createEnabled
+                  ? "bg-blue text-white hover:bg-blue/90"
+                  : "bg-gray-200 text-gray-500 hover:bg-gray-200"
+              } disabled:opacity-60`}
+              aria-label="Criar novo ciclo"
+              aria-busy={createLoading || checkingCycleStatus}
+              onClick={handleCreateCycle}
+              disabled={checkingCycleStatus || createLoading || hasActiveCycle == null || hasActiveCycle}
+              title={
+                checkingCycleStatus
+                  ? "Verificando status do ciclo..."
+                  : hasActiveCycle
+                  ? "Existe um ciclo ativo. Finalize-o para criar um novo."
+                  : "Criar novo ciclo"
+              }
+            >
               <Plus className="size-4" />
-              <p className="hidden lg:inline ml-2">Criar Novo Ciclo</p>
+              <p className="hidden lg:inline ml-2">
+                {createLoading ? "Criando..." : "Criar Novo Ciclo"}
+              </p>
             </Button>
           </>
         )}
