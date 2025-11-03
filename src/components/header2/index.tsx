@@ -14,7 +14,7 @@ import { usePeriod } from "@/contexts/PeriodContext";
 import { toast } from "react-toastify";
 import { createPortal } from "react-dom";
 
-// Popover de confirmação ancorado a um botão (estilo do ZonaCalor com portal e posicionamento dinâmico)
+
 function ConfirmPopover({
   anchorRef,
   open,
