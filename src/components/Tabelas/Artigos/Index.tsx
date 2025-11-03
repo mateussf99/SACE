@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import {useReactTable,getCoreRowModel,getFilteredRowModel,getSortedRowModel,getPaginationRowModel,type ColumnDef } from "@tanstack/react-table"
+import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, getPaginationRowModel, type ColumnDef } from "@tanstack/react-table"
 import { format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Edit, Trash2, EllipsisVertical, Eye, X } from "lucide-react"
@@ -50,7 +50,7 @@ function Index() {
   const [totalRows, setTotalRows] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-    const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmDescription, setConfirmDescription] = useState("")
   const [confirmAction, setConfirmAction] = useState<() => void>(() => { })
 
@@ -61,7 +61,7 @@ function Index() {
     setConfirmAction(() => action); setConfirmDescription(description); setConfirmOpen(true)
   }
 
-  
+
   const deletarAreas = async (ids: number[]) => {
     if (!ids.length) return
     try {
@@ -157,7 +157,7 @@ function Index() {
             <button className="p-1 hover:text-green-700" onClick={abrir}>
               <Edit className="w-4 h-4" />
             </button>
-         <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
+            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
               try {
                 const resp = await deletarAreas([row.original.id!]); alert(resp.message)
                 setData(p => p.filter(d => d.id !== row.original.id)); toggle()
@@ -174,7 +174,8 @@ function Index() {
 
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
     { accessorKey: "id", header: "ID" },
-    { accessorKey: "titulo", header: () => <span className="font-bold">Título</span>, cell: ({ row, getValue }) => (
+    {
+      accessorKey: "titulo", header: () => <span className="font-bold">Título</span>, cell: ({ row, getValue }) => (
         <span
           className="font-semibold cursor-pointer hover:underline"
           onClick={() => {
@@ -184,7 +185,8 @@ function Index() {
         >
           {getValue() as string}
         </span>
-      ) },
+      )
+    },
     { accessorKey: "descricao", header: "Descrição" },
     { accessorKey: "supervisor", header: "Supervisor" },
     { accessorKey: "data", header: "Data de criação" },
@@ -216,6 +218,18 @@ function Index() {
     { key: "data", label: "Intervalo de datas", type: "date" },
     { key: "supervisor", label: "Supervisor" },
   ]
+  const fieldLabels: Record<string, string> = {
+    artigo_id: "ID",
+    titulo: "Título",
+    descricao: "Descrição",
+    supervisor_nome: "Supervisor",
+    data_criacao: "Data de criação",
+    link_artigo: "Link",
+    imagem_nome: "Imagem",
+  }
+
+
+
 
   return (
     <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
@@ -232,7 +246,7 @@ function Index() {
         uniqueValues={uniqueValues}
         selectedCount={0}
         allSelected={false}
-        toggleAllSelected={() => {}}
+        toggleAllSelected={() => { }}
       />
       {loading ? (
         <div className="text-center py-10 text-gray-500">Carregando...</div>
@@ -245,7 +259,7 @@ function Index() {
         </>
       )}
 
- <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto">
           <DialogHeader><DialogTitle className="text-lg font-semibold">Confirmação</DialogTitle>
             <DialogDescription className="text-gray-700">{confirmDescription}</DialogDescription></DialogHeader>
@@ -262,39 +276,48 @@ function Index() {
       <ModalDetalhes<Artigo>
         id={selectedId}
         endpoint="/artigo"
-        campos={["artigo_id", "titulo", "descricao", "supervisor_nome", "data_criacao", "link_artigo", "imagem_nome"]}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        campos={[
+          "artigo_id",
+          "data_criacao",
+          
+          "supervisor_nome",
+
+          "imagem_nome",
+          "titulo",
+          "descricao",
+          "link_artigo",
+
+        ]}
+        fieldLabels={fieldLabels}
+        editableFields={["titulo", "descricao", "link_artigo"]}
+        
         renderField={(field, value) => {
-          const labels: Record<string, string> = {
-            artigo_id: "ID",
-            titulo: "Título",
-            descricao: "Descrição",
-            supervisor_nome: "Supervisor",
-            data_criacao: "Data de criação",
-            link_artigo: "Link",
-            imagem_nome: "Imagem",
+          const label = fieldLabels?.[field] ?? field
+          if (field === "link_artigo" && value) {
+
+            return (
+              <div className="flex flex-col">
+                <strong>{label}:</strong>{" "}
+                <a href={String(value)} target="_blank" className="text-blue-700 underline">
+                  {value}
+                </a>
+              </div>
+            )
           }
-          if (field === "link_artigo" && value)
-            return (
-              <div>
-                <strong>{labels[field]}:</strong>{" "}
-                <a href={String(value)} target="_blank" className="text-blue-700 underline">{value}</a>
-              </div>
-            )
-          if (field === "imagem_nome" && value)
-            return (
-              <div>
-                <strong>{labels[field]}:</strong> {String(value)}
-              </div>
-            )
+
+
+
           return (
-            <div>
-              <strong>{labels[field] ?? field}:</strong> {String(value ?? "Não informado")}
+            <div className="flex flex-col">
+              <strong>{label}:</strong>{" "}
+              {String(value ?? "Não informado")}
             </div>
           )
         }}
       />
+
     </Card>
   )
 }

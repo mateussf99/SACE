@@ -1,31 +1,43 @@
 "use client"
-import TabelaImoveisVisitados from '@/components/Tabelas/ImoveisVisitados/Index'
-import TabelaNaoVisitado from "@/components/Tabelas/ImoveisN-Visitados/Index"
 
-function Index() {
+import RegistroTabela, { normalize } from "@/components/Tabelas/ImoveisVisitados/Index"
+import AreasdeVisita from "@/components/Tabelas/AreasVisita/Index"
+import type { BackendRow, RowData } from "@/components/Tabelas/ImoveisVisitados/Index"
+import { useRegistros } from "@/hooks/useRegistros" // ajuste o path
+import { usePeriod } from "@/contexts/PeriodContext"
+import { Area } from "recharts"
+
+export default function PaginaListas() {
+
+  const { raw, setRaw, normalized, loading, error } =
+    useRegistros<BackendRow, RowData>(normalize)
+
   return (
-    <div className="bg-secondary h-full mt-2 flex flex-col gap-4">
+ <div className="bg-secondary min-h-screen min-h-[100dvh] w-full mt-2 flex flex-col gap-6 px-4 pb-6">
 
-      <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 p-4"></div>
-
-      <div className="w-full px-5">
-        <h2 className="text-xl font-semibold mb-2 text-primary">
-        </h2>
-      </div>
-      <div className="w-full flex flex-col gap-6 px-4 pb-4">
-        <div className="rounded-lg bg-white shadow">
-          <TabelaNaoVisitado />
-
-        </div>
-      </div>
-      <div className="w-full flex flex-col gap-6 px-4 pb-4">
-        <div className="rounded-lg bg-white shadow">
-          <TabelaImoveisVisitados />
-        </div>
+      <div className="rounded-lg bg-white shadow">
+        <AreasdeVisita />
       </div>
 
+      <div className="rounded-lg bg-white shadow">
+        <RegistroTabela
+          normalized={normalized}
+          setRaw={setRaw}
+          variant="semNaoInspecionados"
+          titulo="Imóveis visitados"
+        />
+      </div>
+
+      {/* 2) Tabela APENAS não-inspecionados */}
+      <div className="rounded-lg bg-white shadow">
+        <RegistroTabela
+          normalized={normalized}
+          setRaw={setRaw}
+          variant="apenasNaoInspecionados"
+          titulo="Imóveis não inspecionados"
+        />
+      </div>
 
     </div>
   )
 }
-export default Index
