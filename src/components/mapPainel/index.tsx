@@ -13,7 +13,7 @@ import Pneus from "@/assets/pneus.svg";
 import Lixos from "@/assets/lixos.svg";
 import Naturais from "@/assets/naturais.svg";
 import { usePeriod } from "@/contexts/PeriodContext";
-import api from "@/services/api"; // <- ADDED
+import api from "@/services/api";
 
 // Tipos
 type Tab = "risks" | "deposits";
@@ -171,8 +171,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
     return window.matchMedia("(min-width: 768px)").matches;
   });
 
-  const [summary, setSummary] = useState<DashboardSummary | null>(null); // <- ADDED
-  const [loading, setLoading] = useState<boolean>(false); // <- ADDED
+  const [summary, setSummary] = useState<DashboardSummary | null>(null); 
 
   // Notifica mudanças de layout para reposicionar o dialog ancorado da zona de calor
   useEffect(() => {
@@ -184,7 +183,6 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
     let cancelled = false;
 
     const fetchSummary = async () => {
-      setLoading(true);
       try {
         const isLoggedIn = (() => {
           try {
@@ -203,9 +201,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
         if (!cancelled) setSummary(data);
       } catch (err) {
         if (!cancelled) setSummary(null);
-        // opcional: console.error(err);
-      } finally {
-        if (!cancelled) setLoading(false);
+        
       }
     };
 
