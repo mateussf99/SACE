@@ -60,20 +60,25 @@ function Index() {
     situacao: r.situacao_atual === true ? "Ativo" : r.situacao_atual === false ? "Desligado" : "Não informado",
   })
 
-  const deletarAreas = async (ids: number[]) => {
-    if (!ids.length) return
-    try {
-      const { data } = await api.delete("", { data: { ids } })   /// adicionar metodo ao delete
-      return data
-    } catch (e: any) {
-      const msg: Record<number, string> = {
-        400: "Requisição inválida. IDs não enviados corretamente.",
-        401: "Não autenticado.", 403: "Acesso proibido. Apenas supervisores podem deletar.",
-        404: "Uma ou mais áreas de visita não foram encontradas."
-      }
-      alert(msg[e.response?.status] || "Erro interno do servidor."); throw e
+ const deletarAreas = async (ids: number[]) => {
+  if (!ids.length) return
+  try {
+    for (const id of ids) {
+      await api.delete(`/usuarios/agente/${id}`)
     }
+    return { status: "success", message: "Agentes deletados com sucesso." }
+  } catch (e: any) {
+    const msg: Record<number, string> = {
+      400: "Requisição inválida. IDs não enviados corretamente.",
+      401: "Não autenticado.",
+      403: "Acesso proibido. Apenas supervisores podem deletar.",
+      404: "Um ou mais agentes não foram encontrados."
+    }
+    alert(msg[e.response?.status] || "Erro interno do servidor.")
+    throw e
   }
+}
+
 
   const uniqueValues = (key: keyof RowData) =>
     [...new Set(key === "zonasResponsavel"
@@ -141,7 +146,7 @@ function Index() {
             <button className="p-1 hover:text-blue-500" onClick={handleView}><Edit className="w-4 h-4" /></button>
             <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
               try {
-                const resp = await deletarAreas([row.original.usuario_id!]); alert(resp.message)
+                const resp = await deletarAreas([row.original.usuario_id!]); 
                 setData(p => p.filter(d => d.usuario_id !== row.original.usuario_id)); toggle()
               } catch (e) { console.error(e) }
             }, "Deseja realmente excluir esta área?")}><Trash2 className="w-4 h-4" /></button>
@@ -227,7 +232,7 @@ function Index() {
           if (!ids.length) return alert("Selecione ao menos uma área.")
           confirmDelete(async () => {
             try {
-              const resp = await deletarAreas(ids); alert(resp.message)
+              const resp = await deletarAreas(ids); 
               setData(p => p.filter(d => !ids.includes(d.usuario_id!))); table.toggleAllPageRowsSelected(false)
             } catch (e) { console.error(e) }
           }, `Deseja realmente excluir as ${ids.length} áreas selecionadas?`)
@@ -238,6 +243,18 @@ function Index() {
       </button>
     </div>
   )
+
+  const labels: Record<string, string> = {
+  nome_completo: "Nome",
+  email: "E-mail",
+  telefone_ddd: "DDD",
+  telefone_numero: "Número de Telefone",
+  estado: "Estado",
+  municipio: "Município",
+  situacao_atual: "Situação Atual",
+  setor_de_atuacao: "Setor de Atuação",
+}
+
 
   return (
     <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
@@ -268,11 +285,12 @@ function Index() {
       </Dialog>
 
       <ModalDetalhes<Agente>
-        id={selectedId} endpoint="/usuarios" open={isModalOpen} onOpenChange={setIsModalOpen}
+        id={selectedId} endpoint="/usuarios/agente" open={isModalOpen} onOpenChange={setIsModalOpen}
         campos={["nome_completo", "email", "telefone_ddd", "telefone_numero", "estado", "municipio", "situacao_atual", "setor_de_atuacao"]}
         editableFields={["setor_de_atuacao", "situacao_atual"]}
         selectFields={["setor_de_atuacao", "situacao_atual"]}
         selectOptions={{ setor_de_atuacao: setoresOptions, situacao_atual: ["Ativo", "Desligado"] }}
+          fieldLabels={labels}
         nomeDoCampo="setor"
         renderField={(field, value) => {
           const labels: Record<string, string> = {
@@ -284,7 +302,7 @@ function Index() {
               <li key={i}><span className="font-semibold text-blue-700">{v.setor}</span>{v.bairro && <div className="ml-4 font-semibold text-gray-700">Bairro: {v.bairro}</div>}</li>)}</ul></div>)
           if (field === "situacao_atual")
             return <div><strong>{labels[field]}:</strong> {value ? "Ativo" : "Desligado"}</div>
-          return <div><strong>{labels[field] ?? field}:</strong> {value == null ? "Não informado" : Array.isArray(value) ? value.join(", ") : String(value)}</div>
+          return <div  className="flex flex-col"><strong>{labels[field] ?? field}:</strong> {value == null ? "Não informado" : Array.isArray(value) ? value.join(", ") : String(value)}</div>
         }}
       />
     </Card>

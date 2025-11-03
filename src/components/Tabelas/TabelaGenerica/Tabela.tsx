@@ -15,23 +15,23 @@ export default function Tabela<TData extends object>({ table }: TabelaProps<TDat
                 <Table className="text-fluid-large min-w-max">
                     {/* Cabeçalho */}
                     <TableHeader>
-                        {table.getHeaderGroups().map(headerGroup => (
-                            <TableRow key={headerGroup.id} >
-                                {headerGroup.headers.map(header => (
-                                    <TableHead
-                                        key={header.id}
-                                        className=" font-semibold text-gray-700 border-b border-blue-100"
-                                    >
-                                        {header.isPlaceholder
-                                            ? null
-                                            : header.column.id === "select"
-                                                ? null
-                                                : flexRender(header.column.columnDef.header, header.getContext())}
-                                    </TableHead>
-                                ))}
+                        {table.getHeaderGroups().map((headerGroup) => (
+                            <TableRow key={headerGroup.id}>
+                                {headerGroup.headers.map((header) => {
+                                    if (header.isPlaceholder || !header.column.getIsVisible()) return null
+                                    return (
+                                        <TableHead
+                                            key={header.id}
+                                            className="font-semibold text-gray-700 border-b border-blue-100"
+                                        >
+                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                        </TableHead>
+                                    )
+                                })}
                             </TableRow>
                         ))}
                     </TableHeader>
+
 
                     {/* Corpo */}
                     <TableBody>
@@ -62,7 +62,7 @@ export default function Tabela<TData extends object>({ table }: TabelaProps<TDat
                         ) : (
                             <TableRow>
                                 <TableCell
-                                    colSpan={table.getAllColumns().length}
+                                    colSpan={table.getVisibleLeafColumns().length}
                                     className="h-24 text-center text-gray-500"
                                 >
                                     Nenhum registro encontrado

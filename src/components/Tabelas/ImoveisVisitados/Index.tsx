@@ -1,17 +1,21 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useCallback, useEffect } from "react"
+// + adicione
+import { FileQuestion } from "lucide-react"
+
+
+import type { VisibilityState } from "@tanstack/react-table"
+
+import type { ReactNode } from "react"
 import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  getPaginationRowModel,
-  type ColumnDef,
+  useReactTable, getCoreRowModel, getFilteredRowModel,
+  getSortedRowModel, getPaginationRowModel, type ColumnDef,
 } from "@tanstack/react-table"
 import { parse, format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Edit, Trash2, EllipsisVertical, Eye, X } from "lucide-react"
+import { useDeferredValue } from "react"
 
 import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
@@ -19,6 +23,7 @@ import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 import { api } from "@/services/api"
 
+/* =============== Tipos (iguais aos seus) =============== */
 export type RowData = {
   registro_de_campo_id?: number
   setor?: string
@@ -31,7 +36,7 @@ export type RowData = {
   atividade?: string[]
 }
 
-type BackendRow = {
+export type BackendRow = {
   registro_de_campo_id?: number
   area_de_visita?: { setor?: string; logadouro?: string }
   imovel_complemento?: string
@@ -44,159 +49,504 @@ type BackendRow = {
   [k: string]: any
 }
 
-function Index() {
-  const [data, setData] = useState<RowData[]>([])
+/* =============== Constantes & helpers (iguais aos seus) =============== */
+const STATUS_LABEL: Record<string, string> = {
+  inspecionado: "Inspecionado", tratado: "Tratado", bloqueado: "Bloqueado",
+  fechado: "Fechado", recusado: "Recusado", visitado: "Visitado", nao_inspecionado: "Não visitado"
+}
+export const FIELD_LABELS: Record<string, string> = {
+  registro_de_campo_id: "ID do Registro", area_de_visita: "Área de Visita",
+  imovel_numero: "Nº do Imóvel", imovel_complemento: "Complemento",
+  imovel_tipo: "Tipo de Imóvel", imovel_status: "Status",
+  imovel_lado: "Lado da Rua", imovel_categoria_da_localidade: "Categoria da Localidade",
+  formulario_tipo: "Tipo de Formulário", __label_depositos__: "Depósitos encontrados",
+  a1: "A1", a2: "A2", b: "B", c: "C", d1: "D1", d2: "D2", e: "E",
+  larvicidas: "Larvicidas aplicados", adulticidas: "Adulticidas aplicados",
+  __label_atividades__: "Atividades realizadas", li: "LI", pe: "PE", t: "T", df: "DF", pve: "PVE",
+}
+
+
+const BOOL_ATIVIDADES = ["li", "pe", "t", "df", "pve"] as const
+const DEPOSITOS = ["a1", "a2", "b", "c", "d1", "d2", "e"] as const
+
+export const fmtPt = (d?: string) => {
+  if (!d) return undefined
+  const p = parse(d, "yyyy-MM-dd'T'HH:mm:ssXXX", new Date())
+  if (isValid(p)) return format(p, "dd/MM/yyyy")
+  const iso = new Date(d)
+  return isValid(iso) ? format(iso, "dd/MM/yyyy") : undefined
+}
+export const safe = (v?: unknown) => (v == null || (typeof v === "string" && !v.trim()) ? "Não informado" : String(v))
+
+export const normalize = (r: BackendRow): RowData => {
+  const atividades = Object.entries(r).filter(([_, v]) => typeof v === "boolean" && v).map(([k]) => k.toUpperCase())
+  return {
+    registro_de_campo_id: r.registro_de_campo_id,
+    setor: safe(r.area_de_visita?.setor),
+    logradouro: safe(r.area_de_visita?.logadouro),
+    numero: safe(r.imovel_numero),
+    complemento: safe(r.imovel_complemento),
+    tipo: safe(r.imovel_tipo),
+    status: safe(r.imovel_status),
+    data: fmtPt(r.ciclo?.ano_de_criacao),
+    atividade: atividades.length ? atividades : ["Nenhuma"],
+  }
+}
+
+/* =============== Builders de payload (iguais aos seus) =============== */
+const buildRegistroCampoFormDataStrict = (raw: Record<string, any>): FormData => {
+  const fd = new FormData()
+  const data = { ...raw }
+  const toBool = (v: any) => ["true", "1"].includes(String(v ?? "").trim().toLowerCase()) || v === true
+  const asInt = (v: any) => {
+    const n = Number.parseInt(String(v ?? "").trim(), 10)
+    return Number.isFinite(n) ? String(n) : "0"
+  }
+  const asId = (v: any) => (v && typeof v === "object" ? (v.area_de_visita_id ?? v.registro_de_campo_id ?? v.agente_id ?? v.id ?? v.value ?? null) : v)
+
+  const REQUIRED = ["imovel_numero", "imovel_lado", "imovel_categoria_da_localidade", "imovel_tipo", "imovel_status", "area_de_visita_id", "a1", "a2", "b", "c", "d1", "d2", "e"] as const
+  REQUIRED.forEach((k) => {
+    if (k === "area_de_visita_id") {
+      const areaId = data.area_de_visita_id ?? asId(data.area_de_visita) ?? data?.area_de_visita?.area_de_visita_id ?? data?.area_de_visita?.id
+      if (areaId != null) fd.append("area_de_visita_id", asInt(areaId))
+      return
+    }
+    if (["a1", "a2", "b", "c", "d1", "d2", "e"].includes(k as string)) fd.append(k as string, asInt(data[k]))
+    else fd.append(k as string, String(data[k] ?? ""))
+  })
+
+  const OPTIONAL = ["imovel_complemento", "formulario_tipo", "li", "pe", "t", "df", "pve", "numero_da_amostra", "quantiade_tubitos", "observacao", "ciclo_id"] as const
+  OPTIONAL.forEach((k) => {
+    if (data[k] === undefined) return
+    if (["li", "pe", "t", "df", "pve"].includes(k as string)) { if (toBool(data[k])) fd.append(k as string, "true"); return }
+    if (k === "quantiade_tubitos" || k === "ciclo_id") { fd.append(k as string, asInt(data[k])); return }
+    fd.append(k as string, String(data[k] ?? ""))
+  })
+
+  const isChangedArray = (arr: any) => Array.isArray(arr) && (arr as any).__changed === true
+  if (isChangedArray(data.larvicidas)) {
+    const arr = (data.larvicidas as any[]).map((x: any) => ({ tipo: String(x?.tipo ?? ""), ...(x?.forma ? { forma: String(x.forma) } : {}), quantidade: Number.isFinite(Number(x?.quantidade)) ? Number(x.quantidade) : 0 }))
+    fd.append("larvicidas", JSON.stringify(arr))
+  }
+  if (isChangedArray(data.adulticidas)) {
+    const arr = (data.adulticidas as any[]).map((x: any) => ({ tipo: String(x?.tipo ?? ""), quantidade: Number.isFinite(Number(x?.quantidade)) ? Number(x.quantidade) : 0 }))
+    fd.append("adulticidas", JSON.stringify(arr))
+  }
+  if (isChangedArray(data.files)) (data.files as File[]).forEach((f) => fd.append("files", f))
+  return fd
+}
+
+/* =============== Viewers / Editors (iguais aos seus) =============== */
+const SectionLabel = (text: string) => (
+  <div className="col-span-2 mt-1 mb-1 text-sm font-semibold text-gray-800 border-b border-gray-200 pb-0">{text}</div>
+)
+const viewersRegistroCampo = {
+  "__label_depositos__": () => SectionLabel("Depósitos encontrados"),
+  "__label_atividades__": () => SectionLabel("Atividades realizadas"),
+  area_de_visita: ({ value }: any) => {
+    const setor = value?.setor ?? "Não informado"
+    const logradouro = value?.logadouro ?? "Não informado"
+    return (
+      <div>
+        <strong>Setor / Logradouro:</strong>{" "}
+        <span className="font-semibold">{setor}</span>{" "}
+        <span className="text-gray-500">—</span>{" "}
+        <span className="font-semibold">{logradouro}</span>
+      </div>
+    )
+  },
+  imovel_status: ({ value }: any) => <div><strong>Status:</strong> {STATUS_LABEL[String(value)] ?? String(value ?? "Não informado")}</div>,
+  ...Object.fromEntries((BOOL_ATIVIDADES as readonly string[]).map(k => [
+    k,
+    ({ value }: any) => {
+      const ativo = Boolean(value)
+      const cls = ativo ? "bg-green-100 text-green-800 border border-green-700" : "bg-gray-100 text-gray-700 border border-gray-400"
+      return (
+        <div className="flex items-center gap-2">
+          <strong>{k.toUpperCase()}:</strong>
+          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>{ativo ? "Sim" : "Não"}</span>
+        </div>
+      )
+    },
+  ])),
+  ...Object.fromEntries((DEPOSITOS as readonly string[]).map((k) => [
+    k,
+    ({ value, data }: { value: any; data: any }) => {
+      const v = value ?? data?.deposito?.[k] ?? 0
+      const n = Number.isFinite(Number(v)) ? Number(v) : 0
+      return <div><strong>{k.toUpperCase()}:</strong> <span className="font-semibold">{n}</span></div>
+    },
+  ])),
+  larvicidas: ({ value }: any) => {
+    const arr = Array.isArray(value) ? value : []
+    if (!arr.length) return <div><strong>Larvicidas aplicados:</strong> Nenhum</div>
+    return (
+      <div>
+        <strong>Larvicidas aplicados:</strong>
+        <ul className="list-disc ml-5">
+          {arr.map((v: any, i: number) => (
+            <li key={i}>
+              Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
+              {v.forma ? <> | Forma: <span className="font-semibold">{v.forma}</span></> : null}
+              {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  },
+  adulticidas: ({ value }: any) => {
+    const arr = Array.isArray(value) ? value : []
+    if (!arr.length) return <div><strong>Adulticidas aplicados:</strong> Nenhum</div>
+    return (
+      <div>
+        <strong>Adulticidas aplicados:</strong>
+        <ul className="list-disc ml-5">
+          {arr.map((v: any, i: number) => (
+            <li key={i}>
+              Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
+              {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
+  },
+}
+
+const DepositoEditor = (label: string) =>
+  ({ value, onChange }: { value: any; onChange: (v: any) => void }) => (
+    <div className="flex flex-col w-full">
+      <strong>{label}:</strong>
+      <input
+        type="number" min={0} step={1} value={Number(value ?? 0)}
+        onChange={(e) => onChange(Math.max(0, Number(e.target.value)))}
+        className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 mt-1"
+      />
+    </div>
+  )
+
+function LarvicidasEditor({ value, onChange }: { value: any[]; onChange: (v: any) => void }) {
+  const arr: any[] = Array.isArray(value) ? value : []
+  const [draft, setDraft] = useState({ tipo: "", forma: "", quantidade: 0 })
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
+  const tag = (next: any[]) => { Object.defineProperty(next, "__changed", { value: true, enumerable: false, configurable: true }); return next }
+  const removeAt = async (i: number) => {
+    const item = arr[i]; const id = item?.larvicida_id ?? item?.id
+    if (id != null) {
+      try { setDeletingIndex(i); await api.delete(`/larvicida/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` } }); onChange(tag(arr.filter((_, x) => x !== i))) }
+      catch (err) { console.error(err); alert("Falha ao deletar larvicida no servidor.") }
+      finally { setDeletingIndex(null) }
+      return
+    }
+    onChange(tag(arr.filter((_, x) => x !== i)))
+  }
+  const add = () => {
+    if (!draft.tipo.trim()) return
+    onChange(tag([...arr, { tipo: draft.tipo.trim(), ...(draft.forma.trim() ? { forma: draft.forma.trim() } : {}), quantidade: Number(draft.quantidade || 0) }]))
+    setDraft({ tipo: "", forma: "", quantidade: 0 })
+  }
+  return (
+    <div className="flex flex-col w-full">
+      <strong>Larvicidas aplicados:</strong>
+      <ul className="mt-2 mb-3 space-y-1">
+        {arr.map((it: any, i: number) => (
+          <li key={i} className="flex items-center justify-between bg-gray-50 px-3 py-1 rounded">
+            <span className="text-sm">{it.tipo ?? "?"}{it.forma ? ` • ${it.forma}` : ""}{` • qtd: ${it.quantidade ?? 0}`}</span>
+            <button type="button" onClick={() => removeAt(i)} disabled={deletingIndex === i}
+              className={`text-xs ${deletingIndex === i ? "text-gray-400 cursor-not-allowed" : "text-red-600 hover:underline"}`}>
+              {deletingIndex === i ? "removendo..." : "remover"}
+            </button>
+          </li>
+        ))}
+        {!arr.length && <li className="text-sm text-gray-500">Nenhum</li>}
+      </ul>
+      <div className="grid grid-cols-6 gap-2">
+        <input className="col-span-3 border border-gray-300 rounded-md px-3 py-2" placeholder="Tipo" value={draft.tipo} onChange={(e) => setDraft((p) => ({ ...p, tipo: e.target.value }))} />
+        <input className="col-span-2 border border-gray-300 rounded-md px-3 py-2" placeholder="Forma (opcional)" value={draft.forma} onChange={(e) => setDraft((p) => ({ ...p, forma: e.target.value }))} />
+        <input className="col-span-1 border border-gray-300 rounded-md px-3 py-2" type="number" min={0} step={1} placeholder="Qtd." value={draft.quantidade} onChange={(e) => setDraft((p) => ({ ...p, quantidade: Math.max(0, Number(e.target.value)) }))} />
+      </div>
+      <div className="flex justify-end mt-2">
+        <button type="button" onClick={add} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">Adicionar larvicida</button>
+      </div>
+    </div>
+  )
+}
+function AdulticidasEditor({ value, onChange }: { value: any[]; onChange: (v: any) => void }) {
+  const arr: any[] = Array.isArray(value) ? value : []
+  const [draft, setDraft] = useState({ tipo: "", quantidade: 0 })
+  const [deletingIndex, setDeletingIndex] = useState<number | null>(null)
+  const tag = (next: any[]) => { Object.defineProperty(next, "__changed", { value: true, enumerable: false, configurable: true }); return next }
+  const removeAt = async (i: number) => {
+    const item = arr[i]; const id = item?.adulticida_id ?? item?.id
+    if (id != null) {
+      try { setDeletingIndex(i); await api.delete(`/adulticida/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` } }); onChange(tag(arr.filter((_, x) => x !== i))) }
+      catch (err) { console.error(err); alert("Falha ao deletar adulticida no servidor.") }
+      finally { setDeletingIndex(null) }
+      return
+    }
+    onChange(tag(arr.filter((_, x) => x !== i)))
+  }
+  const add = () => {
+    if (!draft.tipo.trim()) return
+    onChange(tag([...arr, { tipo: draft.tipo.trim(), quantidade: Number(draft.quantidade || 0) }]))
+    setDraft({ tipo: "", quantidade: 0 })
+  }
+  return (
+    <div className="flex flex-col w-full">
+      <strong>Adulticidas aplicados:</strong>
+      <ul className="mt-2 mb-3 space-y-1">
+        {arr.map((it: any, i: number) => (
+          <li key={i} className="flex items-center justify-between bg-gray-50 px-3 py-1 rounded">
+            <span className="text-sm">{it.tipo ?? "?"}{` • qtd: ${it.quantidade ?? 0}`}</span>
+            <button type="button" onClick={() => removeAt(i)} disabled={deletingIndex === i}
+              className={`text-xs ${deletingIndex === i ? "text-gray-400 cursor-not-allowed" : "text-red-600 hover:underline"}`}>
+              {deletingIndex === i ? "removendo..." : "remover"}
+            </button>
+          </li>
+        ))}
+        {!arr.length && <li className="text-sm text-gray-500">Nenhum</li>}
+      </ul>
+      <div className="grid grid-cols-6 gap-2">
+        <input className="col-span-4 border border-gray-300 rounded-md px-3 py-2" placeholder="Tipo" value={draft.tipo} onChange={(e) => setDraft((p) => ({ ...p, tipo: e.target.value }))} />
+        <input className="col-span-2 border border-gray-300 rounded-md px-3 py-2" type="number" min={0} step={1} placeholder="Qtd." value={draft.quantidade} onChange={(e) => setDraft((p) => ({ ...p, quantidade: Math.max(0, Number(e.target.value)) }))} />
+      </div>
+      <div className="flex justify-end mt-2">
+        <button type="button" onClick={add} className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm">Adicionar adulticida</button>
+      </div>
+    </div>
+  )
+}
+const editorsRegistroCampo: Record<string, (args: any) => ReactNode> = {
+  ...Object.fromEntries(DEPOSITOS.map(k => [k, ({ value, onChange }) => DepositoEditor(k.toUpperCase())({ value, onChange })])),
+  larvicidas: ({ value, onChange }) => <LarvicidasEditor value={value} onChange={onChange} />,
+  adulticidas: ({ value, onChange }) => <AdulticidasEditor value={value} onChange={onChange} />,
+}
+
+/* =============== Ações (menu da célula) =============== */
+/* =============== Ações (menu da célula) =============== */
+const AcoesCell = ({
+  row,
+  onView,
+  canEdit,
+  canDelete,
+}: {
+  row: { original: RowData }
+  onView: (id: number | null) => void
+  canEdit: boolean
+  canDelete: boolean
+}) => {
+  const [open, setOpen] = useState(false)
+  const toggle = () => setOpen((p) => !p)
+
+  return (
+    <div className="flex items-center gap-2">
+      {!open ? (
+        <button className="p-1 hover:text-blue-900" onClick={toggle}>
+          <EllipsisVertical className="w-4 h-4 text-blue-700" />
+        </button>
+      ) : (
+        <>
+          <button
+            className={"p-1 hover:text-blue-500"}
+            onClick={() => {
+              toggle()
+              onView(row.original.registro_de_campo_id ?? null)
+            }}
+            title={canEdit ? "Editar" : "Abrir em modo leitura"}
+          >
+            <Edit className="w-4 h-4" />
+          </button>
+
+          {/* 🗑️ Excluir: só para agente */}
+          {canDelete && (
+            <button
+              className="p-1 text-red-600 hover:text-red-900"
+              onClick={() => {
+                console.log("Excluir", row.original)
+                toggle()
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* ❌ Fechar menu */}
+          <button className="p-1 hover:text-gray-600" onClick={toggle}>
+            <X className="w-4 h-4" />
+          </button>
+        </>
+      )}
+    </div>
+  )
+}
+
+
+
+/* =============== Variantes (qual conjunto mostrar) =============== */
+type Variant = "semNaoInspecionados" | "apenasNaoInspecionados" | "todos"
+const passaVariant = (status?: string, v: Variant = "semNaoInspecionados") => {
+  const s = (status ?? "").toLowerCase()
+  if (v === "semNaoInspecionados") return s !== "nao_inspecionado"
+  if (v === "apenasNaoInspecionados") return s === "nao_inspecionado"
+  return true
+}
+
+/* =============== Componente Reutilizável =============== */
+export default function RegistroTabela({
+  normalized,
+  setRaw,
+  variant = "semNaoInspecionados",
+  titulo = "Registros",
+}: {
+  normalized: RowData[]
+  setRaw: React.Dispatch<React.SetStateAction<BackendRow[]>>
+  variant?: Variant
+  titulo?: string
+}) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [filters, setFilters] = useState<Record<string, string[]>>({ setor: [], tipo: [], status: [], atividade: [] })
   const [tmpFilters, setTmpFilters] = useState({ ...filters })
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null])
   const [tmpDateRange, setTmpDateRange] = useState<[Date | null, Date | null]>([...dateRange])
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState({ pageIndex: 0, pageSize: 10 })
   const [totalRows, setTotalRows] = useState(0)
   const [totalRegistros, setTotalRegistros] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  const uniqValues = (k: keyof RowData) =>
-    Array.from(new Set(data.flatMap((r) => (Array.isArray(r[k]) ? r[k]! : r[k] ? [r[k]!] : [])))).map(String)
 
-  const normalize = (r: BackendRow): RowData => {
-    const fmt = (d?: string) => {
-      if (!d) return undefined
-      const p = parse(d, "yyyy-MM-dd'T'HH:mm:ssXXX", new Date())
-      if (isValid(p)) return format(p, "dd/MM/yyyy")
-      const iso = new Date(d)
-      return isValid(iso) ? format(iso, "dd/MM/yyyy") : undefined
-    }
-    const safe = (v?: unknown) => (v == null || (typeof v === "string" && !v.trim()) ? "Não informado" : String(v))
-    const atividades = Object.entries(r).filter(([_, v]) => typeof v === "boolean" && v).map(([k]) => k.toUpperCase())
-    return {
-      registro_de_campo_id: r.registro_de_campo_id,
-      setor: safe(r.area_de_visita?.setor),
-      logradouro: safe(r.area_de_visita?.logadouro),
-      numero: safe(r.imovel_numero),
-      complemento: safe(r.imovel_complemento),
-      tipo: safe(r.imovel_tipo),
-      status: safe(r.imovel_status),
-      data: fmt(r.ciclo?.ano_de_criacao),
-      atividade: atividades.length ? atividades : ["Nenhuma"],
-    }
-  }
+  const deferredGlobal = useDeferredValue(globalFilter)
+
+  const accessLevelLS =
+    typeof window !== "undefined" ? localStorage.getItem("auth_access_level") : null
+  const isAgente = String(accessLevelLS ?? "").toLowerCase() === "agente"
 
 
-    const statusMap: Record<string, string> = {
-    
-    "inspecionado": "Inspecionado",
-    "tratado": "Tratado",
-    "bloqueado": "Bloqueado",
-    "fechado": "Fechado",
-    "recusado": "Recusado"
-  }
+  const visibilityByVariant: Record<Variant, VisibilityState> = useMemo(() => ({
+    semNaoInspecionados: {
+      // ex.: nenhuma coluna oculta
+    },
+    apenasNaoInspecionados: {
+      atividade: false,   // id da coluna "Atividades Realizadas"
+      complemento: false, // id da coluna "Complemento"
+    },
+    todos: {}
+  }), [])
+
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(
+    () => visibilityByVariant[variant] ?? {}
+  )
 
   useEffect(() => {
-    const load = async () => {
-      setLoading(true); setError(null)
-      try {
-        const res = await api.get("/registro_de_campo", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` },
-        })
-        const resp = res.data
-        let all: RowData[] = Array.isArray(resp) ? resp.map((r: BackendRow) => normalize(r)) : []
-        // filtro global
-            all = all.filter(r => r.status?.toLowerCase() !== "nao_inspecionado")
-        let filtered = globalFilter
-          ? all.filter((r) => Object.values(r).some((v) => String(v ?? "").toLowerCase().includes(globalFilter.toLowerCase())))
-          : all
-        // filtros por campo
-        for (const [k, vals] of Object.entries(filters))
-          if (vals.length)
-            filtered = filtered.filter((r) => {
-              const f = r[k as keyof RowData]
-              return Array.isArray(f) ? f.some((x) => vals.includes(x)) : vals.includes(String(f))
-            })
-        // intervalo de datas
-        if (dateRange[0] && dateRange[1])
-          filtered = filtered.filter((r) => {
-            if (!r.data) return false
-            const [d, m, y] = r.data.split("/").map(Number)
-            const dt = new Date(y, m - 1, d)
-            return isValid(dt) && dt >= dateRange[0]! && dt <= dateRange[1]!
-          })
+    setColumnVisibility(visibilityByVariant[variant] ?? {})
+  }, [variant, visibilityByVariant])
 
-        setTotalRegistros(filtered.length) // total de registros após filtro
-setTotalRows(filtered.length)   
-        const start = page.pageIndex * page.pageSize
-        setData(filtered.slice(start, start + page.pageSize))
-      } catch (e) {
-        console.error(e); setError("Erro ao carregar dados do servidor"); setData([])
-      } finally { setLoading(false) }
+
+
+
+  // base por variante
+  const base = useMemo(() => normalized.filter(r => passaVariant(r.status, variant)), [normalized, variant])
+
+  // filtros & paginação (inteiramente em memória)
+  const filtered: RowData[] = useMemo(() => {
+    const txt = (deferredGlobal ?? "").toLowerCase()
+    const byGlobal = txt ? base.filter((r) => Object.values(r).some(v => String(v ?? "").toLowerCase().includes(txt))) : base
+
+    let byFields = byGlobal
+    for (const [k, vals] of Object.entries(filters)) {
+      if (!vals.length) continue
+      byFields = byFields.filter((r: any) => Array.isArray(r[k]) ? r[k].some((x: any) => vals.includes(String(x))) : vals.includes(String(r[k])))
     }
-    load()
 
-  }, [page.pageIndex, page.pageSize, filters, dateRange, globalFilter])
+    if (dateRange[0] && dateRange[1]) {
+      byFields = byFields.filter((r) => {
+        if (!r.data) return false
+        const [d, m, y] = r.data.split("/").map(Number)
+        const dt = new Date(y, m - 1, d)
+        return isValid(dt) && dt >= dateRange[0]! && dt <= dateRange[1]!
+      })
+    }
 
-  const AcoesCell = ({ row }: { row: { original: RowData } }) => {
-    const [open, setOpen] = useState(false)
-    const toggle = () => setOpen((p) => !p)
-    return (
-      <div className="flex items-center gap-2">
-        {!open ? (
-          <button className="p-1 hover:text-blue-900" onClick={toggle}><EllipsisVertical className="w-4 h-4 text-blue-700" /></button>
-        ) : (
-          <>
-            <button className="p-1 hover:text-green-700" onClick={() => { toggle(); if (row.original.registro_de_campo_id) { setSelectedId(row.original.registro_de_campo_id); setIsModalOpen(true) } }}><Eye className="w-4 h-4" /></button>
-            <button className="p-1 hover:text-blue-500" onClick={() => { console.log("Editar", row.original); toggle() }}><Edit className="w-4 h-4" /></button>
-            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => { console.log("Excluir", row.original); toggle() }}><Trash2 className="w-4 h-4" /></button>
-            <button className="p-1 hover:text-gray-600" onClick={toggle}><X className="w-4 h-4" /></button>
-          </>
-        )}
-      </div>
-    )
-  }
+    return byFields
+  }, [base, deferredGlobal, filters, dateRange])
 
+  const paged: RowData[] = useMemo(() => {
+    setTotalRegistros(filtered.length); setTotalRows(filtered.length)
+    const start = page.pageIndex * page.pageSize
+    return filtered.slice(start, start + page.pageSize)
+  }, [filtered, page.pageIndex, page.pageSize])
+
+  const uniqValues = useCallback(
+    (k: keyof RowData) =>
+      Array.from(new Set(filtered.flatMap((r) => (Array.isArray(r[k]) ? r[k]! : r[k] ? [r[k]!] : [])))).map(String),
+    [filtered]
+  )
+
+  // colunas
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
-    { accessorKey: "setor", header: "Identificador do Setor" },
+   {accessorKey: "setor",
+    header: "Identificador do setor",
+    cell: ({ row, getValue }) => (
+      <span
+        className="font-semibold text-blue-800 cursor-pointer hover:underline"
+        onClick={() => {
+          // 👇 usa o id do registro para abrir o modal
+          setSelectedId(row.original.registro_de_campo_id ?? null)
+          setIsModalOpen(true)
+        }}
+      >
+        {getValue() as string}
+      </span>
+    ),
+  },
     { accessorKey: "complemento", header: "Complemento" },
     { accessorKey: "logradouro", header: "Logradouro" },
     { accessorKey: "numero", header: "N°" },
     { accessorKey: "tipo", header: "Tipo de Imóvel" },
     {
-      accessorKey: "status", header: "Status", cell: ({ getValue }) => {
-        // Pega o valor bruto da linha
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ getValue }) => {
         const raw = getValue() as string
-        // Converte pelo mapa, ou mantém o valor se não estiver no mapa
-        const s = statusMap[raw] ?? raw
-
+        const s = STATUS_LABEL[raw] ?? raw
         const cls =
           s === "Inspecionado" ? "bg-green-100 text-green-700 border border-green-700" :
-          s === "Visitado" ? "bg-lime-100 text-lime-800 border border-lime-800" :
-          s === "Bloqueado" ? "bg-blue-100 text-blue-800 border border-blue-800" :
-          s === "Fechado" ? "bg-yellow-100 text-yellow-700 border border-yellow-700" :
-          s === "Recusado" ? "bg-red-100 text-red-700 border border-red-700" :
-          "bg-gray-100 text-gray-700 border border-gray-700"
-
+            s === "Visitado" ? "bg-lime-100 text-lime-800 border border-lime-800" :
+              s === "Bloqueado" ? "bg-blue-100 text-blue-800 border border-blue-800" :
+                s === "Fechado" ? "bg-yellow-100 text-yellow-700 border border-yellow-700" :
+                  s === "Recusado" || s === "Não visitado" ? "bg-red-100 text-red-700 border border-red-700" :
+                    "bg-gray-100 text-gray-700 border border-gray-700"
         return <span className={`px-2 py-1 rounded-md text-xs font-semibold ${cls}`}>{s}</span>
       }
     },
-   // { accessorKey: "data", header: "Data da Visita" },
     { accessorKey: "atividade", header: "Atividades Realizadas" },
-    { id: "acoes", header: "Ações", cell: ({ row }) => <AcoesCell row={row} />, size: 60 },
+    {
+      id: "acoes",
+      header: "Ações",
+      cell: ({ row }) => <AcoesCell
+        row={row}
+        onView={(id) => { setSelectedId(id); setIsModalOpen(true) }}
+        canEdit={isAgente}
+        canDelete={isAgente}  
+      />,
+      size: 60
+    },
   ], [])
 
   const table = useReactTable({
-    data,
+    data: paged,
     columns,
     pageCount: Math.max(1, Math.ceil(totalRows / page.pageSize)),
-    state: { globalFilter, rowSelection, pagination: { pageIndex: page.pageIndex, pageSize: page.pageSize } },
+    state: { globalFilter, rowSelection, pagination: { pageIndex: page.pageIndex, pageSize: page.pageSize }, columnVisibility, },
     onGlobalFilterChange: setGlobalFilter,
     onRowSelectionChange: setRowSelection,
     onPaginationChange: (updater) => {
       const s = typeof updater === "function" ? updater({ pageIndex: page.pageIndex, pageSize: page.pageSize }) : updater
       setPage({ pageIndex: s.pageIndex, pageSize: s.pageSize })
     },
+    onColumnVisibilityChange: setColumnVisibility,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -206,6 +556,8 @@ setTotalRows(filtered.length)
     manualFiltering: true,
   })
 
+
+
   const filtros: FiltroConfig<RowData>[] = [
     { key: "data", label: "Intervalo de datas", type: "date" },
     { key: "setor", label: "Identificador do setor" },
@@ -214,97 +566,103 @@ setTotalRows(filtered.length)
     { key: "atividade", label: "Atividade Realizada" },
   ]
 
-  const renderField = (field: keyof BackendRow, value: BackendRow[keyof BackendRow]) => {
-    const labels: Record<string, string> = {
-      registro_de_campo_id: "ID",
-      imovel_numero: "Número do imóvel",
-      imovel_complemento: "Complemento",
-      imovel_tipo: "Tipo de imóvel",
-      imovel_status: "Status",
-      agente_nome: "Agente responsável",
-      area_de_visita_id: "Área de visita",
-      larvicidas: "Larvicidas aplicados",
-      adulticidas: "Adulticidas aplicados",
-      ciclo: "Data da visita",
-    }
-
-    if ((field === "larvicidas" || field === "adulticidas") && Array.isArray(value)) {
-      const arr = value as { tipo?: string; forma?: string; quantidade?: number }[]
-      return (
-        <div>
-          <strong>{labels[field]}:</strong>
-          <ul className="list-disc ml-5">
-            {arr.map((v, i) => (
-              <li key={i}>
-                Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
-                {v.forma && <> | Forma: <span className="font-semibold">{v.forma}</span></>}
-                {v.quantidade !== undefined && <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )
-    }
-
-    return (
-      <div>
-        <strong>{labels[field] ?? String(field)}:</strong>{" "}
-        {value == null ? "Não informado" : Array.isArray(value) ? (value as any).join(", ") : String(value)}
-      </div>
+  // merge local após salvar no modal
+  const handleSavedFromModal = (updated: any) => {
+    if (!updated?.registro_de_campo_id) return
+    setRaw(prev =>
+      prev.map((r) => {
+        if (r.registro_de_campo_id !== updated.registro_de_campo_id) return r
+        return {
+          ...r,
+          imovel_numero: updated.imovel_numero ?? r.imovel_numero,
+          imovel_complemento: updated.imovel_complemento ?? r.imovel_complemento,
+          imovel_tipo: updated.imovel_tipo ?? r.imovel_tipo,
+          imovel_status: updated.imovel_status ?? r.imovel_status,
+          li: typeof updated.li === "boolean" ? updated.li : r.li,
+          pe: typeof updated.pe === "boolean" ? updated.pe : r.pe,
+          t: typeof updated.t === "boolean" ? updated.t : r.t,
+          df: typeof updated.df === "boolean" ? updated.df : r.df,
+          pve: typeof updated.pve === "boolean" ? updated.pve : r.pve,
+          larvicidas: Array.isArray(updated.larvicidas) ? updated.larvicidas : r.larvicidas,
+          adulticidas: Array.isArray(updated.adulticidas) ? updated.adulticidas : r.adulticidas,
+          a1: updated.a1 ?? r.a1, a2: updated.a2 ?? r.a2, b: updated.b ?? r.b, c: updated.c ?? r.c,
+          d1: updated.d1 ?? r.d1, d2: updated.d2 ?? r.d2, e: updated.e ?? r.e,
+        } as BackendRow
+      })
     )
   }
 
+  const modalCampos: (keyof BackendRow | string)[] = [
+    "registro_de_campo_id", "area_de_visita", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
+    "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
+    "__label_depositos__", ...DEPOSITOS, "larvicidas", "adulticidas",
+    "__label_atividades__", ...BOOL_ATIVIDADES,
+  ]
+  const isEmpty = !totalRegistros
+
   return (
     <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
-      <div className="text-fluid-large font-bold text-gray-900 mb-2">Total: {totalRegistros}</div>
+      <div className="text-fluid-large font-bold text-gray-900 mb-2">
+        {titulo}: {totalRegistros}
+      </div>
 
-      <TabelaFiltro<RowData>
-        filtros={filtros}
-        globalFilter={globalFilter}
-        setGlobalFilter={setGlobalFilter}
-        tempFilters={tmpFilters}
-        setTempFilters={setTmpFilters}
-        tempDateRange={tmpDateRange}
-        setTempDateRange={setTmpDateRange}
-        setFilters={setFilters}
-        setAppliedDateRange={setDateRange}
-        uniqueValues={uniqValues}
-        selectedCount={0}
-        allSelected={false}
-        toggleAllSelected={() => {}}
-      />
+      {isEmpty ? (
+        // 🌤️ Estado vazio elegante
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white py-10 px-4 text-center">
+          <div className="mb-3 rounded-full bg-blue-50 p-3">
+            <FileQuestion className="h-8 w-8 text-blue-600" />
+          </div>
+          <h3 className="text-base font-semibold text-gray-900">Nenhum registro encontrado</h3>
 
-      {loading ? (
-        <div className="text-center py-10 text-gray-500">Carregando...</div>
-      ) : error ? (
-        <div className="text-center py-10 text-red-600">{error}</div>
+        </div>
       ) : (
         <>
+          <TabelaFiltro<RowData>
+            filtros={filtros}
+            globalFilter={globalFilter}
+            setGlobalFilter={setGlobalFilter}
+            tempFilters={tmpFilters}
+            setTempFilters={setTmpFilters}
+            tempDateRange={tmpDateRange}
+            setTempDateRange={setTmpDateRange}
+            setFilters={setFilters}
+            setAppliedDateRange={setDateRange}
+            uniqueValues={uniqValues}
+            selectedCount={0}
+            allSelected={false}
+            toggleAllSelected={() => { }}
+          />
+
           <Tabela table={table} />
           <TabelaPaginacao<RowData> table={table} />
+
+          <ModalDetalhes<BackendRow>
+            id={selectedId}
+            endpoint="/registro_de_campo"
+            open={isModalOpen}
+            onOpenChange={setIsModalOpen}
+            campos={modalCampos}
+            editableFields={["imovel_status", ...DEPOSITOS, "larvicidas", "adulticidas", ...BOOL_ATIVIDADES]}
+            selectFields={["imovel_status"]}
+            selectOptions={{ imovel_status: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })) }}
+            fieldsTwoColumns={[
+              "registro_de_campo_id", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
+              "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
+            ]}
+            fieldsThreeColumns={[...DEPOSITOS, ...BOOL_ATIVIDADES]}
+            fieldsFullWidth={["area_de_visita", "larvicidas", "adulticidas"]}
+            fieldLabels={FIELD_LABELS}
+            sendAsJson={false}
+            onBeforeSubmit={buildRegistroCampoFormDataStrict}
+            arrayEditingStrategy="none"
+            customViewers={viewersRegistroCampo as any}
+            customEditors={editorsRegistroCampo as any}
+            onSaved={handleSavedFromModal}
+            canEdit={isAgente}
+          />
+
         </>
       )}
-
-      <ModalDetalhes<BackendRow>
-        id={selectedId}
-        endpoint="/registro_de_campo"
-        campos={[
-          "registro_de_campo_id",
-          "imovel_numero",
-          "imovel_complemento",
-          "imovel_tipo",
-          "imovel_status",
-          "agente_nome",
-          "area_de_visita_id",
-          "larvicidas",
-          "adulticidas",
-        ]}
-        open={isModalOpen}
-        onOpenChange={setIsModalOpen}
-        renderField={renderField}
-      />
     </Card>
   )
 }
-
-export default Index
