@@ -168,7 +168,7 @@ function ZonaCalor({
               <X className="h-4 w-4" />
             </button>
 
-            <div className="space-y-1">
+            <div className="space-y-1 border-l-4 p-2" style={{ borderLeftColor: ring }}>
               <h2 id={headingId} className="flex items-center gap-2 text-lg font-semibold">
                 {icon}
                 {titulo ?? label}
