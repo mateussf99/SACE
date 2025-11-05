@@ -60,7 +60,7 @@ const sanitizeData = (data: unknown): DataItem[] =>
 
 export default function Index({ graficos, loadError }: IndexProps) {
   const [graficoIndex, setGraficoIndex] = useState(0)
-  const [navLoading, setNavLoading] = useState(false)
+  const [navLoading] = useState(false) // remova o setNavLoading se não usa
 
   const hasGraphs = graficos.length > 0
 
