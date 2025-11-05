@@ -8,7 +8,7 @@ import DepositosIdentificados from "@/components/MIniGraficos/DepositosIdentific
 import AcoesDeBloqueio from "@/components/graficoMultiplo/acoesBloqueio/Index"
 import GraficoReincidencia from "@/components/GraficoBarras/Reincidencia/Index"
 import GraficoImoveisTratados from "@/components/GraficoBarras/N_imoveis_tratados/Index"
-import GraficoImoveisTrabalhados from "@/components/GraficoBarras/ImoveisTrabalhados/index"
+import GraficoImoveisTrabalhados from "@/components/GraficoBarras/ImoveisTrabalhados/Index"
 
 function Index() {
   return (
