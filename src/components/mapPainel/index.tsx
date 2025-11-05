@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Search, Maximize2, Minimize2 } from "lucide-react";
 import Dengue from "@/assets/dengue.svg";
-import Chikungunya from "@/assets/Chikungunya.svg";
+import Chikungunya from "@/assets/chikungunya.svg";
 import Zika from "@/assets/zika.svg";
 import Caixa from "@/assets/caixa.svg";
 import Moveis from "@/assets/moveis.svg";
