@@ -6,7 +6,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import api from "@/services/api"
+
+// ATENÇÃO: mover para o backend/variável de ambiente para não expor a chave no cliente
+const PUSHALERT_API = "https://api.pushalert.co/rest/v1/send"
+const PUSHALERT_KEY = "a37a011f18d88c3c636a0f5bc5d0cf37"
 
 type Props = {
   defaultOpen?: boolean
@@ -58,9 +61,28 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
 
     setEnviando(true)
     try {
-      await api.post("/notificacao/send_all", payload)
-      toast.success("Notificação enviada com sucesso!")
+      // PushAlert espera application/x-www-form-urlencoded e Authorization com api_key
+      const body = new URLSearchParams()
+      body.set("title", payload.title)
+      body.set("message", payload.message)
+      if (payload.url) body.set("url", payload.url)
 
+      const resp = await fetch(PUSHALERT_API, {
+        method: "POST",
+        headers: {
+          "Authorization": `api_key=${PUSHALERT_KEY}`,
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: body.toString(),
+      })
+
+      const data = await resp.json().catch(() => null as any)
+      if (!resp.ok || (data && data.success === false)) {
+        const msg = data?.message || data?.error || `Falha ao enviar notificação. (HTTP ${resp.status})`
+        throw new Error(msg)
+      }
+
+      toast.success("Notificação enviada com sucesso!")
       if (onFinish) await onFinish(payload)
 
       // limpa e fecha
@@ -69,10 +91,7 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
       setUrl("")
       setOpen(false)
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Falha ao enviar notificação."
+      const msg = err?.message || "Falha ao enviar notificação."
       toast.error(msg)
     } finally {
       setEnviando(false)
