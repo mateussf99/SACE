@@ -69,7 +69,7 @@ export function useRegistros<Raw, Row>(
   )
 
   const isAgente = accessLevel === "agente"
-  const isSupervisor = accessLevel === "supervisor"
+  //const isSupervisor = accessLevel === "supervisor"
   // Política: se não for "agente", não filtra (supervisor ou outros níveis enxergam tudo)
   const mustFilterByAgente = isAgente
 
