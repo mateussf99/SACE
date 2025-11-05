@@ -13,10 +13,11 @@ import Dashboard from '../pages/dashboard';
 import Agentes from '../pages/agentes';
 import { useAuth } from '@/contexts/AuthContext';
 import SidebarAdmin from '@/components/sidebarAdmin'; 
+import type { ReactNode } from 'react' // <- adiciona tipos do React
 
-function PrivateRoute({ children }: { children: JSX.Element }) {
+function PrivateRoute({ children }: { children: ReactNode }) {
     const { isAuthenticated } = useAuth();
-    return isAuthenticated ? children : <Navigate to="/login" replace />;
+    return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function AppRoutes() {
