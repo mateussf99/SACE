@@ -5,6 +5,7 @@ import { api } from "@/services/api"
 import GraficoBarrasSimples from "@/components/GraficoBarras/GraficoBarrasGenerico/Index"
 import { usePeriod } from "@/contexts/PeriodContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { toast } from "react-toastify"
 
 
 type Larvicida = {
@@ -129,8 +130,13 @@ export default function GraficoImoveisTratados() {
         } else {
           setRegistros(data)
         }
-      } catch {
-        // opcional: adicionar um log ou toast se necessário
+      } catch (err: any) {
+        console.error("Erro ao carregar registros de campo:", err)
+        const msg =
+          err?.response?.data?.message ||
+          err?.message ||
+          "Falha ao carregar registros de campo."
+        setError(msg) // toast será disparado pelo useEffect acima
       } finally {
         setLoading(false)
       }
@@ -150,6 +156,10 @@ export default function GraficoImoveisTratados() {
     tubitos,
   } = useMemo(() => calcularResumo(registros), [registros])
 
+
+  useEffect(() => {
+    if (error) toast.error(error)
+  }, [error])
 
   if (loading) {
     return (
