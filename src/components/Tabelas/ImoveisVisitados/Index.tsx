@@ -14,7 +14,7 @@ import {
 } from "@tanstack/react-table"
 import { parse, format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
-import { Edit, Trash2, EllipsisVertical, Eye, X } from "lucide-react"
+import { Edit, Trash2, EllipsisVertical, X } from "lucide-react"
 import { useDeferredValue } from "react"
 
 import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
