@@ -129,14 +129,8 @@ export default function GraficoImoveisTratados() {
         } else {
           setRegistros(data)
         }
-      } catch (err: any) {
-        console.error("Erro ao carregar registros de campo:", err)
-        const msg =
-          err?.response?.data?.error ||
-          err?.message ||
-          "Erro ao carregar registros de campo."
-        setError(msg)
-        setRegistros([])
+      } catch {
+        // trate o erro se necessário
       } finally {
         setLoading(false)
       }

@@ -68,7 +68,7 @@ function isValidEmail(v: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
 }
 
-export default function FormsUserDialog({ defaultOpen, onFinish }: Props) {
+export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
   const [open, setOpen] = useState(!!defaultOpen)
   const nomeRef = useRef<HTMLInputElement>(null)
 
