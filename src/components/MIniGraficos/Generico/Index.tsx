@@ -1,12 +1,12 @@
 "use client"
-import { TrendingUp, TrendingDown } from "lucide-react"
+import { TrendingUp, TrendingDown, MoveRight } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { LineChart, Line, ResponsiveContainer } from "recharts"
 import { useMemo } from "react"
 
 type DataPoint = { value: number }
 
-type  CardMetrica = {
+type CardMetrica = {
   data?: DataPoint[]
   currentTotal?: number
   previousTotal?: number
@@ -17,7 +17,6 @@ type  CardMetrica = {
   bgColor?: string
   showPercentage?: boolean
 }
-
 
 const safeNumber = (
   value: unknown,
@@ -36,7 +35,7 @@ const lightenColor = (hex: string, opacity = 0.1) => {
   return `rgba(${r},${g},${b},${opacity})`
 }
 
-export function Index({
+export default function Index({
   data = [],
   currentTotal = 0,
   previousTotal = 0,
@@ -47,7 +46,6 @@ export function Index({
   bgColor,
   showPercentage = false,
 }: CardMetrica) {
-
   const safeCurrent = safeNumber(currentTotal)
   const safePrevious = safeNumber(previousTotal)
   const safeTitle = safeString(title, "Sem título")
@@ -58,10 +56,47 @@ export function Index({
     [data]
   )
 
-  const percentChange = safePrevious ? ((safeCurrent - safePrevious) / safePrevious) * 100 : 0
-  const isIncrease = percentChange >= 0
-  const mainColor = isIncrease ? increaseColor : decreaseColor
-  const badgeColor = lightenColor(mainColor, 0.2)
+  const hasGraphData =
+    safeData.length > 0 && safeData.some(point => point.value !== 0)
+
+  const hasComparisonBase = safePrevious > 0
+
+  const rawPercentChange = hasComparisonBase
+    ? ((safeCurrent - safePrevious) / safePrevious) * 100
+    : 0
+
+  const isIncrease = hasComparisonBase && safeCurrent > safePrevious
+  const isDecrease = hasComparisonBase && safeCurrent < safePrevious
+  const isSame = hasComparisonBase && safeCurrent === safePrevious
+
+  const hasTrendInfo = hasGraphData && hasComparisonBase
+
+  let mainColor: string
+  if (!hasTrendInfo || isSame) {
+    mainColor = bgColor ? "#ffffff" : "#6b7280" // gray-500
+  } else if (isIncrease) {
+    mainColor = increaseColor
+  } else {
+    mainColor = decreaseColor
+  }
+
+  const badgeColor = lightenColor(mainColor, hasTrendInfo ? 0.2 : 0.15)
+
+  // 🏷️ Conteúdo da badge
+ let badgeLabel: string | null = null
+  let TrendIcon: typeof TrendingUp | typeof TrendingDown | typeof MoveRight | null = null
+
+  if (!hasTrendInfo) {
+    badgeLabel = "Sem histórico"
+  } else if (isSame) {
+    // mesmo valor: 0% de variação + ícone neutro
+    badgeLabel = `${Math.abs(rawPercentChange).toFixed(1)}%`
+    TrendIcon = MoveRight
+  } else {
+    // aumento ou redução
+    badgeLabel = `${Math.abs(rawPercentChange).toFixed(1)}%`
+    TrendIcon = isIncrease ? TrendingUp : TrendingDown
+  }
 
   const formatValue = (value: number) =>
     showPercentage
@@ -107,11 +142,12 @@ export function Index({
                 className="px-1.5 py-0.5 rounded-full text-sm md:text-xs max-[400px]:text-[8px] font-semibold flex items-center gap-0.5"
                 style={{ backgroundColor: badgeColor, color: bgColor ? "white" : mainColor }}
               >
-                {Math.abs(percentChange).toFixed(1)}%
-                {isIncrease ? (
-                  <TrendingUp className="h-2 w-2 sm:h-3 sm:w-3" aria-label="Aumento" />
-                ) : (
-                  <TrendingDown className="h-2 w-2 sm:h-3 sm:w-3" aria-label="Redução" />
+                {badgeLabel && <span>{badgeLabel}</span>}
+                {TrendIcon && (
+                  <TrendIcon
+                    className="h-2.5 w-2.5 sm:h-3 sm:w-3"
+                    aria-label={isIncrease ? "Aumento" : isDecrease ? "Redução" : "Estável"}
+                  />
                 )}
               </span>
             )}
@@ -120,15 +156,35 @@ export function Index({
 
         <div className="w-14 h-8 sm:w-20 md:w-18 md:h-10 xl:w-26 xl:h-14">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={safeData}>
-              <Line
-                type="linear"
-                dataKey="value"
-                stroke={bgColor ? "white" : mainColor}
-                strokeWidth={2}
-                dot={false}
-              />
-            </LineChart>
+            {hasGraphData ? (
+              <LineChart data={safeData}>
+                <Line
+                  type="linear"
+                  dataKey="value"
+                  stroke={bgColor ? "white" : mainColor}
+                  strokeWidth={2}
+                  dot={false}
+                />
+              </LineChart>
+            ) : (
+              <LineChart
+                data={[
+                  { value: 2 },
+                  { value: 3.2 },
+                  { value: 2.8 },
+                  { value: 3.6 },
+                ]}
+              >
+                <Line
+                  type="linear"
+                  dataKey="value"
+                  stroke={bgColor ? "rgba(255,255,255,0.6)" : "#e5e7eb"}
+                  strokeWidth={2}
+                  dot={false}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            )}
           </ResponsiveContainer>
         </div>
       </CardHeader>
@@ -144,5 +200,3 @@ export function Index({
     </Card>
   )
 }
-
-export default Index

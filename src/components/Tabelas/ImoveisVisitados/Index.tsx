@@ -492,7 +492,6 @@ export default function RegistroTabela({
       <span
         className="font-semibold text-blue-800 cursor-pointer hover:underline"
         onClick={() => {
-          // 👇 usa o id do registro para abrir o modal
           setSelectedId(row.original.registro_de_campo_id ?? null)
           setIsModalOpen(true)
         }}
