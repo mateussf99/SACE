@@ -130,7 +130,7 @@ export default function GraficoImoveisTratados() {
           setRegistros(data)
         }
       } catch {
-        // trate o erro se necessário
+        // opcional: adicionar um log ou toast se necessário
       } finally {
         setLoading(false)
       }

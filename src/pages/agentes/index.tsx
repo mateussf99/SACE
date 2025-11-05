@@ -15,7 +15,7 @@ export default function PaginaListas() {
   const canSeeReport = role.includes("admin") || role.includes("supervisor")
   const { year, cycle } = usePeriod();
 
-  const { raw, setRaw, normalized } =
+  const { raw: _raw, setRaw, normalized } =
     useRegistros<BackendRow, RowData>(normalize)
 
   const [downloading, setDownloading] = useState(false)
