@@ -8,7 +8,7 @@ import TabelaAreaDeVisitas from '@/components/Tabelas/AreasVisita/Index'
 import TabelaArtigos from '@/components/Tabelas/Artigos/Index'
 import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { BellPlus } from 'lucide-react'
+import FormNotificacao from '@/components/formNotificacao'
 
 function index() {
   // abas
@@ -20,7 +20,7 @@ function index() {
     { id: 'notificacoes', label: 'Notificações' },
   ] as const
   type TabId = typeof tabs[number]['id']
-  const [activeTab, setActiveTab] = useState<TabId>('artigos')
+  const [activeTab, setActiveTab] = useState<TabId>('areas')
 
   return (
     <div className='bg-secondary h-full pt-2 flex-col gap-4'>
@@ -84,16 +84,8 @@ function index() {
           className={`${activeTab === 'notificacoes' ? 'flex-col ' : 'hidden'}`}
           aria-hidden={activeTab !== 'notificacoes'}
         >
-          <div className='p-4 '>
-            <Button
-              variant='default'
-              size='lg'
-              className='w-full h-15  gap-2 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue  text-white'
-              aria-label='Enviar notificações para a população'
-            >
-              <BellPlus className='h-5 w-5' />
-              Enviar notificações para a população
-            </Button>
+          <div className=' '>
+            <FormNotificacao />
           </div>
         </div>
       </div>
