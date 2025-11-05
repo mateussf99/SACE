@@ -1,16 +1,30 @@
 "use client"
 
 import { useState, useMemo, useEffect } from "react"
-import { useReactTable, getCoreRowModel, getFilteredRowModel, getSortedRowModel, getPaginationRowModel, type ColumnDef } from "@tanstack/react-table"
+import {
+  useReactTable,
+  getCoreRowModel,
+  getFilteredRowModel,
+  getSortedRowModel,
+  getPaginationRowModel,
+  type ColumnDef,
+} from "@tanstack/react-table"
 import { format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
-import { Edit, Trash2, EllipsisVertical, Eye, X } from "lucide-react"
+import { Edit, Trash2, EllipsisVertical, X } from "lucide-react"
 import { api } from "@/services/api"
 import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
 // --- TIPAGEM ---
@@ -35,6 +49,91 @@ export type RowData = {
   imagem?: string
 }
 
+// --- CONSTANTES / HELPERS ---
+const filtros: FiltroConfig<RowData>[] = [
+  { key: "data", label: "Intervalo de datas", type: "date" },
+  { key: "supervisor", label: "Supervisor" },
+]
+
+const fieldLabels: Record<string, string> = {
+  artigo_id: "ID",
+  titulo: "Título",
+  descricao: "Descrição",
+  supervisor_nome: "Supervisor",
+  data_criacao: "Data de criação",
+  link_artigo: "Link",
+  imagem_nome: "Imagem",
+}
+
+const formatArtigoToRow = (a: Artigo): RowData => ({
+  id: a.artigo_id,
+  titulo: a.titulo ?? "Não informado",
+  descricao: a.descricao ?? "Não informado",
+  supervisor: a.supervisor_nome ?? "Não informado",
+  data: a.data_criacao ? format(new Date(a.data_criacao), "dd/MM/yyyy") : "Não informado",
+  link: a.link_artigo ?? "",
+  imagem: a.imagem_nome ?? "",
+})
+
+const applyFilters = (
+  rows: RowData[],
+  globalFilter: string,
+  filters: Record<string, string[]>,
+  [start, end]: [Date | null, Date | null],
+) => {
+  let artigos = [...rows]
+
+  if (globalFilter) {
+    const termo = globalFilter.toLowerCase()
+    artigos = artigos.filter(r =>
+      Object.values(r).some(v => String(v ?? "").toLowerCase().includes(termo)),
+    )
+  }
+
+  Object.entries(filters).forEach(([k, vals]) => {
+    if (!vals.length) return
+    artigos = artigos.filter(r => vals.includes(String(r[k as keyof RowData] ?? "")))
+  })
+
+  if (start && end) {
+    artigos = artigos.filter(r => {
+      const [d, m, y] = (r.data ?? "").split("/").map(Number)
+      const dt = new Date(y, m - 1, d)
+      return isValid(dt) && dt >= start && dt <= end
+    })
+  }
+
+  return artigos
+}
+
+const deletarArtigo = async (artigo_id?: number) => {
+  if (!artigo_id) return
+  try {
+    const { data } = await api.delete(`/artigo/${artigo_id}`)
+    return data
+  } catch (e: any) {
+    const msg: Record<number, string> = {
+      401: "Não autenticado. Token JWT ausente ou inválido.",
+      403: "Acesso proibido. Apenas supervisores podem deletar.",
+      404: "Artigo não encontrado.",
+    }
+    alert(msg[e.response?.status] || "Erro interno do servidor.")
+    throw e
+  }
+}
+
+const buildArtigoPayload = (payload: Partial<Artigo>) => {
+  const out: any = {}
+  if (payload.titulo != null) out.titulo = payload.titulo
+  if (payload.descricao != null) out.descricao = payload.descricao
+  if (payload.link_artigo != null) out.link_artigo = payload.link_artigo
+
+  const possibleFile = (payload as any).imagem_nome
+  if (possibleFile instanceof File) out.imagem = possibleFile
+
+  return out
+}
+
 function Index() {
   const [data, setData] = useState<RowData[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
@@ -52,31 +151,16 @@ function Index() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmDescription, setConfirmDescription] = useState("")
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => { })
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => {})
 
   const uniqueValues = (key: keyof RowData) =>
     Array.from(new Set(data.map(r => r[key]).filter(Boolean))).map(String)
 
   const confirmDelete = (action: () => void, description = "Deseja realmente excluir?") => {
-    setConfirmAction(() => action); setConfirmDescription(description); setConfirmOpen(true)
+    setConfirmAction(() => action)
+    setConfirmDescription(description)
+    setConfirmOpen(true)
   }
-
-
-  const deletarAreas = async (ids: number[]) => {
-    if (!ids.length) return
-    try {
-      const { data } = await api.delete("", { data: { ids } })  /// adicionar metodo ao delete
-      return data
-    } catch (e: any) {
-      const msg: Record<number, string> = {
-        400: "Requisição inválida. IDs não enviados corretamente.",
-        401: "Não autenticado.", 403: "Acesso proibido. Apenas supervisores podem deletar.",
-        404: "Uma ou mais áreas de visita não foram encontradas."
-      }
-      alert(msg[e.response?.status] || "Erro interno do servidor."); throw e
-    }
-  }
-
 
   // --- BUSCA DE DADOS ---
   useEffect(() => {
@@ -87,40 +171,12 @@ function Index() {
         const { data: res, status } = await api.get("/artigo")
         if (status !== 200) throw new Error("Erro ao buscar artigos")
 
-        let artigos: RowData[] = res.map((a: Artigo) => ({
-          id: a.artigo_id,
-          titulo: a.titulo ?? "Não informado",
-          descricao: a.descricao ?? "Não informado",
-          supervisor: a.supervisor_nome ?? "Não informado",
-          data: a.data_criacao ? format(new Date(a.data_criacao), "dd/MM/yyyy") : "Não informado",
-          link: a.link_artigo ?? "",
-          imagem: a.imagem_nome ?? "",
-        }))
-
-        if (globalFilter) {
-          const termo = globalFilter.toLowerCase()
-          artigos = artigos.filter(r =>
-            Object.values(r).some(v =>
-              Array.isArray(v) ? v.join(", ").toLowerCase().includes(termo) : String(v).toLowerCase().includes(termo)
-            )
-          )
-        }
-
-        Object.entries(filters).forEach(([k, vals]) => {
-          if (vals.length) artigos = artigos.filter(r => vals.includes(String(r[k as keyof RowData])))
-        })
-
-        if (dateRange[0] && dateRange[1]) {
-          artigos = artigos.filter(r => {
-            const [d, m, y] = (r.data ?? "").split("/").map(Number)
-            const dt = new Date(y, m - 1, d)
-            return isValid(dt) && dt >= dateRange[0]! && dt <= dateRange[1]!
-          })
-        }
+        const artigosRaw: RowData[] = res.map((a: Artigo) => formatArtigoToRow(a))
+        const artigosFiltrados = applyFilters(artigosRaw, globalFilter, filters, dateRange)
 
         const start = pageIndex * pageSize
-        setData(artigos.slice(start, start + pageSize))
-        setTotalRows(artigos.length)
+        setData(artigosFiltrados.slice(start, start + pageSize))
+        setTotalRows(artigosFiltrados.length)
       } catch (err) {
         console.error(err)
         setError("Erro ao carregar dados")
@@ -131,14 +187,10 @@ function Index() {
     carregar()
   }, [pageIndex, pageSize, filters, dateRange, globalFilter])
 
-  // --- AÇÕES ---
   const AcoesCell = ({ row }: { row: { original: RowData } }) => {
     const [show, setShow] = useState(false)
-    const toggle = () => setShow(!show)
-    const handle = (action: string) => {
-      console.log(action, row.original)
-      toggle()
-    }
+    const toggle = () => setShow(prev => !prev)
+
     const abrir = () => {
       if (row.original.id) {
         setSelectedId(row.original.id)
@@ -146,6 +198,7 @@ function Index() {
       }
       toggle()
     }
+
     return (
       <div className="flex items-center gap-2">
         {!show ? (
@@ -157,12 +210,26 @@ function Index() {
             <button className="p-1 hover:text-green-700" onClick={abrir}>
               <Edit className="w-4 h-4" />
             </button>
-            <button className="p-1 text-red-600 hover:text-red-900" onClick={() => confirmDelete(async () => {
-              try {
-                const resp = await deletarAreas([row.original.id!]); alert(resp.message)
-                setData(p => p.filter(d => d.id !== row.original.id)); toggle()
-              } catch (e) { console.error(e) }
-            }, "Deseja realmente excluir esta área?")}><Trash2 className="w-4 h-4" /></button>
+            <button
+              className="p-1 text-red-600 hover:text-red-900"
+              onClick={() =>
+                confirmDelete(
+                  async () => {
+                    try {
+                      const resp = await deletarArtigo(row.original.id!)
+                      if (resp?.message) alert(resp.message)
+                      setData(p => p.filter(d => d.id !== row.original.id))
+                      toggle()
+                    } catch (e) {
+                      console.error(e)
+                    }
+                  },
+                  "Deseja realmente excluir esta área?",
+                )
+              }
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
             <button className="p-1 hover:text-gray-600" onClick={toggle}>
               <X className="w-4 h-4" />
             </button>
@@ -175,7 +242,9 @@ function Index() {
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
     { accessorKey: "id", header: "ID" },
     {
-      accessorKey: "titulo", header: () => <span className="font-bold">Título</span>, cell: ({ row, getValue }) => (
+      accessorKey: "titulo",
+      header: () => <span className="font-bold">Título</span>,
+      cell: ({ row, getValue }) => (
         <span
           className="font-semibold cursor-pointer hover:underline"
           onClick={() => {
@@ -185,13 +254,32 @@ function Index() {
         >
           {getValue() as string}
         </span>
-      )
+      ),
     },
     { accessorKey: "descricao", header: "Descrição" },
     { accessorKey: "supervisor", header: "Supervisor" },
     { accessorKey: "data", header: "Data de criação" },
     { id: "acoes", header: "Ações", cell: ({ row }) => <AcoesCell row={row} />, size: 60 },
   ], [])
+
+  const handleArtigoSaved = (updated: Artigo) => {
+    if (!updated?.artigo_id) return
+    setData(prev =>
+      prev.map(row =>
+        row.id === updated.artigo_id
+          ? {
+              id: updated.artigo_id,
+              titulo: updated.titulo ?? row.titulo,
+              descricao: updated.descricao ?? row.descricao,
+              supervisor: updated.supervisor_nome ?? row.supervisor,
+              data: updated.data_criacao ? format(new Date(updated.data_criacao), "dd/MM/yyyy") : row.data,
+              link: updated.link_artigo ?? row.link,
+              imagem: updated.imagem_nome ?? row.imagem,
+            }
+          : row,
+      ),
+    )
+  }
 
   const table = useReactTable({
     data,
@@ -214,23 +302,6 @@ function Index() {
     manualFiltering: true,
   })
 
-  const filtros: FiltroConfig<RowData>[] = [
-    { key: "data", label: "Intervalo de datas", type: "date" },
-    { key: "supervisor", label: "Supervisor" },
-  ]
-  const fieldLabels: Record<string, string> = {
-    artigo_id: "ID",
-    titulo: "Título",
-    descricao: "Descrição",
-    supervisor_nome: "Supervisor",
-    data_criacao: "Data de criação",
-    link_artigo: "Link",
-    imagem_nome: "Imagem",
-  }
-
-
-
-
   return (
     <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
       <TabelaFiltro<RowData>
@@ -246,8 +317,9 @@ function Index() {
         uniqueValues={uniqueValues}
         selectedCount={0}
         allSelected={false}
-        toggleAllSelected={() => { }}
+        toggleAllSelected={() => {}}
       />
+
       {loading ? (
         <div className="text-center py-10 text-gray-500">Carregando...</div>
       ) : error ? (
@@ -261,17 +333,29 @@ function Index() {
 
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent className="bg-white rounded-lg shadow-lg p-6 max-w-sm mx-auto">
-          <DialogHeader><DialogTitle className="text-lg font-semibold">Confirmação</DialogTitle>
-            <DialogDescription className="text-gray-700">{confirmDescription}</DialogDescription></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold">Confirmação</DialogTitle>
+            <DialogDescription className="text-gray-700">
+              {confirmDescription}
+            </DialogDescription>
+          </DialogHeader>
           <DialogFooter className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancelar</Button>
-            <Button className="bg-red-600 hover:bg-red-700 text-white" variant="destructive"
-              onClick={() => { confirmAction(); setConfirmOpen(false) }}>Confirmar</Button>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              variant="destructive"
+              onClick={() => {
+                confirmAction()
+                setConfirmOpen(false)
+              }}
+            >
+              Confirmar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       <ModalDetalhes<Artigo>
         id={selectedId}
@@ -281,44 +365,46 @@ function Index() {
         campos={[
           "artigo_id",
           "data_criacao",
-          
           "supervisor_nome",
-
           "imagem_nome",
           "titulo",
           "descricao",
           "link_artigo",
-
         ]}
         fieldLabels={fieldLabels}
-        editableFields={["titulo", "descricao", "link_artigo"]}
-        
+        editableFields={["titulo", "descricao", "link_artigo", "imagem_nome"]}
+        nomeDoCampo="imagem_nome"
+        sendAsJson={false}
+        onBeforeSubmit={buildArtigoPayload}
+        onSaved={handleArtigoSaved}
         renderField={(field, value) => {
           const label = fieldLabels?.[field] ?? field
           if (field === "link_artigo" && value) {
-
             return (
               <div className="flex flex-col">
                 <strong>{label}:</strong>{" "}
-                <a href={String(value)} target="_blank" className="text-blue-700 underline">
+                <a
+                  href={String(value)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-700 underline"
+                >
                   {value}
                 </a>
               </div>
             )
           }
-
-
-
           return (
             <div className="flex flex-col">
-              <strong>{label}:</strong>{" "}
-              {String(value ?? "Não informado")}
+              <strong>{label}:</strong> {String(value ?? "Não informado")}
             </div>
           )
         }}
+        fieldsTwoColumns={["supervisor_nome", "data_criacao"]}
+        fieldsFullWidth={["titulo", "descricao", "link_artigo"]}
       />
-
     </Card>
   )
 }
+
 export default Index
