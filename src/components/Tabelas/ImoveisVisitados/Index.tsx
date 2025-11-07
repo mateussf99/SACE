@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback, useEffect } from "react"
-import { FileQuestion } from "lucide-react"
+
 
 
 import type { VisibilityState } from "@tanstack/react-table"
@@ -418,7 +418,7 @@ export default function RegistroTabela({
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [page, setPage] = useState({ pageIndex: 0, pageSize: 10 })
   const [totalRows, setTotalRows] = useState(0)
-  const [totalRegistros, setTotalRegistros] = useState(0)
+  // const [totalRegistros, setTotalRegistros] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -475,7 +475,8 @@ export default function RegistroTabela({
   }, [base, deferredGlobal, filters, dateRange])
 
   const paged: RowData[] = useMemo(() => {
-    setTotalRegistros(filtered.length); setTotalRows(filtered.length)
+    // setTotalRegistros(filtered.length); 
+    setTotalRows(filtered.length)
     const start = page.pageIndex * page.pageSize
     return filtered.slice(start, start + page.pageSize)
   }, [filtered, page.pageIndex, page.pageSize])
