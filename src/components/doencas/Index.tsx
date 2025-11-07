@@ -215,7 +215,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
       setLoadingLista(true)
       setErro(null)
       try {
-        const { data } = await api.get<DoencaConfirmada[]>("/doencas_confirmadas", {
+        const { data } = await api.get<DoencaConfirmada[]>("/doentes_confirmados", {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
           },
@@ -270,7 +270,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
     try {
       setSalvandoBatch(true)
 
-      const { data } = await api.post("/doencas_confirmadas", payload, {
+      const { data } = await api.post("/doentes_confirmados", payload, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -351,7 +351,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
         }),
       )
 
-      const resLista = await api.get<DoencaConfirmada[]>("/doencas_confirmadas", {
+      const resLista = await api.get<DoencaConfirmada[]>("/doentes_confirmados", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -396,7 +396,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
 
     try {
       setSalvandoEdicao(true)
-      const { data } = await api.put(`/doencas_confirmadas/${id}`, payload, {
+      const { data } = await api.put(`/doentes_confirmados/${id}`, payload, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
@@ -426,7 +426,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const deletarRegistro = async (id: number) => {
     setDeletandoId(id)
     try {
-      const { data } = await api.delete(`/doencas_confirmadas/${id}`, {
+      const { data } = await api.delete(`/doentes_confirmados/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
