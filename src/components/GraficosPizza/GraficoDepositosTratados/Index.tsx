@@ -3,21 +3,21 @@
 import { useEffect, useState } from "react"
 import { api } from "@/services/api"
 import ImoveisTrabalhadosChart from "@/components/GraficosPizza/GraficoPizzaGenerico/Index"
-import { usePeriod } from "@/contexts/PeriodContext" // Import do contexto
+import { usePeriod } from "@/contexts/PeriodContext" 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-// Lista de cores disponíveis
-const COLORS = ["#3B82F6", "#F59E0B", "#10B981", "#EF4444", "#8B5CF6", "#F43F5E"]
+
+const COLORS = ["#179d37ff", "#fbfb13ff", "#f2a900ff", "#006bc8ff", "#7c45fcff", "#ff2e51ff"]
 
 export default function GraficoDepositosTratados() {
-  const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod() // Valores automáticos do contexto
+  const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod()
 
   const [dados, setDados] = useState<{ name: string; value: number; color?: string }[]>([])
   const [centerNumbers, setCenterNumbers] = useState<{ worked?: number; total: number; centerText?: string }>({ total: 0 })
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!anoSelecionado || !cicloSelecionado) return // Evita chamada se não tiver valores ainda
+    if (!anoSelecionado || !cicloSelecionado) return 
 
     async function fetchData() {
       setLoading(true)
@@ -27,16 +27,17 @@ export default function GraficoDepositosTratados() {
           headers: { Authorization: `Bearer ${token}` },
         })
 
-        // Gera dinamicamente o array de chartData
-        const entries = Object.entries(data).filter(([_, value]) => Number(value) > 0)
-        let chartData = entries.map(([key, value], index) => ({
-          name: key.charAt(0).toUpperCase() + key.slice(1), // capitaliza o nome
-          value: Number(value),
-          color: COLORS[index % COLORS.length], // aplica cor em ordem
-        }))
 
-        // Mantém exatamente a mesma lógica que você já tinha
-        chartData = chartData.sort((a, b) => b.value - a.value)
+       const entries = Object.entries(data).filter(([_, value]) => Number(value) > 0)
+
+
+        const sortedEntries = entries.sort((a, b) => Number(b[1]) - Number(a[1]))
+
+        const chartData = sortedEntries.map(([key, value], index) => ({
+          name: key.charAt(0).toUpperCase() + key.slice(1),
+          value: Number(value),
+          color: COLORS[index % COLORS.length],
+        }))
 
         const total = chartData.reduce((sum, item) => sum + item.value, 0)
 

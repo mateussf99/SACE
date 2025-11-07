@@ -3,19 +3,19 @@
 import { useEffect, useState } from "react"
 import { api } from "@/services/api"
 import CardMetrica from "@/components/MIniGraficos/Generico/Index"
-import { usePeriod } from "@/contexts/PeriodContext" // import do contexto
+import { usePeriod } from "@/contexts/PeriodContext"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type DadosGrafico = {
   ano: number
-  casos_confirmados: number
+  total_doencas: number
   ciclo: number
 }
 
 type CasosConfirmadosResponse = {
   dados_grafico: DadosGrafico[]
   resumo_ciclo_atual: {
-    casos_confirmados: number
+    total_doencas: number
     dados_do_ultimo_ciclo: number
     porcentagem: string
     crescimento: "aumentou" | "diminuiu" | string
@@ -23,19 +23,19 @@ type CasosConfirmadosResponse = {
 }
 
 export default function GraficoCasosConfirmados() {
-  const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod() // valores automáticos do contexto
+  const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod() 
   const [dados, setDados] = useState<CasosConfirmadosResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!anoSelecionado || !cicloSelecionado) return // evita chamada se não tiver valores
+    if (!anoSelecionado || !cicloSelecionado) return 
 
     async function fetchData() {
       setLoading(true)
       try {
         const token = localStorage.getItem("token") ?? ""
         const { data } = await api.get<CasosConfirmadosResponse>(
-          `/grafico/casos_confirmados/${anoSelecionado}/${cicloSelecionado}`,
+          `/grafico/total_doencas_confirmadas/${anoSelecionado}/${cicloSelecionado}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
@@ -57,31 +57,42 @@ export default function GraficoCasosConfirmados() {
         <CardTitle className="text-xs sm:text-lg md:text-xl xl:text-xl font-semibold bg-gray-200 rounded w-1/3 h-4" /> <span>Carregando...</span>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col">
-        <div className="w-full flex-1 bg-gray-100 rounded min-h-[250px]" />
+        <div className="w-full flex-1 bg-gray-100 rounded min-h-[180px]" />
       </CardContent>
     </Card>
   )
 }
-  if (!dados) return <p>Nenhum dado disponível.</p>
+ if (!dados || !dados.dados_grafico?.length) {
+    return (
+      <CardMetrica
+        title="Casos Confirmados"
+        subtitle="Nenhum dado disponível para este ciclo"
+        data={[]}              // força estado 'Sem histórico'
+        currentTotal={0}
+        previousTotal={0}
+        increaseColor="#9ca3af" // neutro
+        decreaseColor="#9ca3af" // neutro
+      />
+    )
+  }
 
-  // 🔹 Mantemos todos os ciclos retornados pelo endpoint
+
 const todosCiclos = [...dados.dados_grafico].slice(-5)
 
-  // 🔹 Prepara a lista de valores para o gráfico
-  const chartData = todosCiclos.map(d => ({ value: d.casos_confirmados }))
 
-  // 🔹 Total do ciclo selecionado (destacado no gráfico)
-  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.casos_confirmados ?? 0
+  const chartData = todosCiclos.map(d => ({ value: d.total_doencas }))
+
+  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.total_doencas?? 0
   console.log("Ciclo selecionado:", cicloSelecionado, "currentTotal:", currentTotal)
 
   return (
     <CardMetrica
       title={`Casos Confirmados`}
-      data={chartData} // envia todos os ciclos para o gráfico
-      currentTotal={currentTotal} // valor do ciclo selecionado
-      previousTotal={dados.resumo_ciclo_atual.dados_do_ultimo_ciclo} // valor do último ciclo
-      increaseColor="#22c55e"
-      decreaseColor="#6A1B9A"
+      data={chartData} 
+      currentTotal={currentTotal} 
+      previousTotal={dados.resumo_ciclo_atual.dados_do_ultimo_ciclo}
+      increaseColor="#ff0000ff"
+      decreaseColor="#03c100ff"
     />
   )
 }

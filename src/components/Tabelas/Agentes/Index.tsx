@@ -26,18 +26,20 @@ import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGene
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 
-/* =========================
-   Tipos
-========================= */
 export interface Agente {
   usuario_id?: number
   nome_completo?: string
   email?: string
+  registro_do_servidor?: string
   telefone_ddd?: string | number
   telefone_numero?: string
   estado?: string
   municipio?: string
+  bairro?: string
+  logradouro?: string
+  numero?: number | string
   situacao_atual?: boolean
+  senha?: string
   setor_de_atuacao?: { setor?: string; bairro?: string }[]
 }
 
@@ -56,11 +58,6 @@ export type RowData = {
 
 type SetorAtuacao = { setor?: string; bairro?: string }
 
-/* =========================
-   View / Edit de Setor de Atuação
-========================= */
-
-// Viewer (modo leitura) – lista bonitinha com setor + bairro
 const SetorAtuacaoViewer = ({ label, value }: { label: string; value: any }) => {
   const lista = (Array.isArray(value) ? value : []) as SetorAtuacao[]
 
@@ -89,7 +86,6 @@ const SetorAtuacaoViewer = ({ label, value }: { label: string; value: any }) => 
   )
 }
 
-// Editor (modo edição) – lista + remover + adicionar via select
 const SetorAtuacaoEditor = ({
   label,
   value,
@@ -189,10 +185,6 @@ const SetorAtuacaoEditor = ({
   )
 }
 
-/* =========================
-   Componente principal
-========================= */
-
 function Index() {
   const [data, setData] = useState<RowData[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
@@ -215,7 +207,9 @@ function Index() {
     desc: "",
     action: () => {},
   })
-  const [setoresOptions, setSetoresOptions] = useState<Array<{ value: number; label: string }>>([])
+  const [setoresOptions, setSetoresOptions] = useState<
+    Array<{ value: number; label: string }>
+  >([])
 
   const confirmDelete = (action: () => void, desc = "Deseja realmente excluir?") =>
     setConfirm({ open: true, desc, action })
@@ -240,19 +234,17 @@ function Index() {
         : "Não informado",
   })
 
-    const handleAgenteSaved = (updated: Agente) => {
+  const handleAgenteSaved = (updated: Agente) => {
     if (!updated?.usuario_id) return
 
-    // Atualiza apenas a linha visível correspondente
     setData(prev =>
       prev.map(row =>
         row.usuario_id === updated.usuario_id
-          ? sanitize(updated) // reaplica a mesma lógica de RowData
+          ? sanitize(updated)
           : row
       )
     )
   }
-
 
   const deletarAreas = async (ids: number[]) => {
     if (!ids.length) return
@@ -274,12 +266,12 @@ function Index() {
   }
 
   const uniqueValues = (key: keyof RowData) =>
-    [...new Set(key === "zonasResponsavel"
-      ? data.flatMap(r => r.zonasResponsavel ?? [])
-      : data.map(r => r[key]).filter(Boolean),
+    [...new Set(
+      key === "zonasResponsavel"
+        ? data.flatMap(r => r.zonasResponsavel ?? [])
+        : data.map(r => r[key]).filter(Boolean),
     )].map(String)
 
-  // Carrega setores (área_de_visita) → options com ID + nome
   useEffect(() => {
     const fetchSetores = async () => {
       try {
@@ -306,7 +298,6 @@ function Index() {
     fetchSetores()
   }, [])
 
-  // Carrega agentes
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
@@ -357,20 +348,42 @@ function Index() {
     fetchData()
   }, [pageIndex, pageSize, filters, globalFilter])
 
-  /* =========================
-     View / Edit personalizados
-  ========================= */
-
   const customViewers = {
     setor_de_atuacao: (args: any) => (
       <SetorAtuacaoViewer label={args.label} value={args.value} />
     ),
+    telefone_ddd: ({ data }: any) => {
+    const ddd = data?.telefone_ddd ?? ""
+    const numero = data?.telefone_numero ?? ""
+
+    const temTelefone = (ddd && String(ddd).trim()) || (numero && String(numero).trim())
+
+    return (
+      <div className="flex flex-col">
+        <strong>Telefone:</strong>
+        {temTelefone ? (
+          <span>
+            ({ddd}) {numero}
+          </span>
+        ) : (
+          <span>Não informado</span>
+        )}
+      </div>
+    )
+  },
+
+  telefone_numero: () => null,
+
   }
 
   const handleBeforeSubmitAgente = (payload: Partial<Agente>) => {
     const out: any = { ...payload }
 
-    // Converter lista de objetos { setor, bairro } -> lista de IDs [1,2,...]
+    if (!("senha" in payload) || out.senha === "" || out.senha == null) {
+    delete out.senha
+  }
+
+
     if (Array.isArray(out.setor_de_atuacao)) {
       const nomes = out.setor_de_atuacao
         .map((item: any) => (item?.setor ?? "").trim())
@@ -383,8 +396,33 @@ function Index() {
       out.setor_de_atuacao = ids
     }
 
+  
     if (typeof out.situacao_atual !== "boolean") {
       out.situacao_atual = Boolean(out.situacao_atual)
+    }
+
+
+    if (out.telefone_ddd != null) {
+      const dddNum = Number(out.telefone_ddd)
+      if (Number.isNaN(dddNum)) {
+        delete out.telefone_ddd
+      } else {
+        out.telefone_ddd = dddNum
+      }
+    }
+
+    if (out.numero != null) {
+      const num = Number(out.numero)
+      if (Number.isNaN(num)) {
+        delete out.numero
+      } else {
+        out.numero = num
+      }
+    }
+
+
+    if (out.senha === "" || out.senha == null) {
+      delete out.senha
     }
 
     return out
@@ -415,11 +453,22 @@ function Index() {
         </label>
       </div>
     ),
+    senha: (args: any) => (
+      <div className="flex flex-col gap-1 w-full">
+        <strong>{args.label}:</strong>
+        <input
+          type="password"
+          className="border border-gray-300 rounded-md px-3 py-2 w-full bg-white focus:ring-2 focus:ring-blue-500"
+          value={args.value ?? ""}
+          onChange={e => args.onChange(e.target.value)}
+          placeholder="Digite uma nova senha"
+        />
+        <span className="text-xs text-gray-500">
+          Deixe em branco para manter a senha atual.
+        </span>
+      </div>
+    ),
   }
-
-  /* =========================
-     Ações da tabela
-  ========================= */
 
   const AcoesCell = ({ row }: { row: { original: RowData } }) => {
     const [open, setOpen] = useState(false)
@@ -616,17 +665,22 @@ function Index() {
 
   const labels: Record<string, string> = {
     nome_completo: "Nome",
+    registro_do_servidor: "Registro do Servidor",
     email: "E-mail",
     telefone_ddd: "DDD",
     telefone_numero: "Número de Telefone",
     estado: "Estado",
     municipio: "Município",
+    bairro: "Bairro",
+    logradouro: "Logradouro",
+    numero: "Número",
     situacao_atual: "Situação Atual",
+    senha: "Senha",
     setor_de_atuacao: "Setor de Atuação",
   }
 
   return (
-    <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
+    <Card className="space-y-4 min-w-[170px] p-2 lg:p-4 xl:p-6 border-none shadow-none">
       {!selectedCount && (
         <TabelaFiltro<RowData>
           filtros={filtros}
@@ -694,15 +748,32 @@ function Index() {
         onOpenChange={setIsModalOpen}
         campos={[
           "nome_completo",
+          "registro_do_servidor",
           "email",
           "telefone_ddd",
           "telefone_numero",
-          "estado",
           "municipio",
+          "estado",
+          "bairro",
+          "logradouro",
+          "numero",
           "situacao_atual",
+          "senha",
           "setor_de_atuacao",
         ]}
-        editableFields={["setor_de_atuacao", "situacao_atual"]}
+
+        editableFields={[
+          "email",
+          "telefone_ddd",
+          "telefone_numero",
+          "municipio",
+          "bairro",
+          "logradouro",
+          "numero",
+          "situacao_atual",
+          "senha",
+          "setor_de_atuacao",
+        ]}
         selectFields={["situacao_atual"]}
         selectOptions={{
           situacao_atual: [
@@ -717,6 +788,7 @@ function Index() {
         onBeforeSubmit={handleBeforeSubmitAgente}
         renderField={(field, value) => {
           const label = labels[field as keyof typeof labels] ?? field
+
           if (field === "situacao_atual") {
             return (
               <div>
@@ -724,6 +796,15 @@ function Index() {
               </div>
             )
           }
+
+          if (field === "senha") {
+            return (
+              <div>
+                <strong>{label}:</strong> ••••
+              </div>
+            )
+          }
+
           return (
             <div className="flex flex-col">
               <strong>{label}:</strong>
@@ -735,16 +816,22 @@ function Index() {
             </div>
           )
         }}
+
         fieldsTwoColumns={[
-          "nome_completo",
+          
           "email",
-          "municipio",
-          "estado",
+          "telefone_ddd",
           "telefone_numero",
+          "estado",
+          "municipio",
+          "bairro",
+          "logradouro",
+          "numero",
+          "registro_do_servidor",
           "situacao_atual",
         ]}
-        fieldsFullWidth={[]}
-         onSaved={handleAgenteSaved}
+        fieldsFullWidth={["senha", "setor_de_atuacao"]}
+        onSaved={handleAgenteSaved}
       />
     </Card>
   )

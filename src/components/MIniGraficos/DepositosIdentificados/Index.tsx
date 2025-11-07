@@ -58,30 +58,42 @@ export default function GraficoDepositosIdentificados() {
         <CardTitle className="text-xs sm:text-lg md:text-xl xl:text-xl font-semibold bg-gray-200 rounded w-1/3 h-4" /> <span>Carregando...</span>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col">
-        <div className="w-full flex-1 bg-gray-100 rounded min-h-[250px]" />
+        <div className="w-full flex-1 bg-gray-100 rounded min-h-[180px]" />
       </CardContent>
     </Card>
   )
 }
-  if (!dados) return <p>Nenhum dado disponível.</p>
+ if (!dados || !dados.dados_grafico?.length) {
+    return (
+      <CardMetrica
+        title="Casos Confirmados"
+        subtitle="Nenhum dado disponível para este ciclo"
+        data={[]}              // força estado 'Sem histórico'
+        currentTotal={0}
+        previousTotal={0}
+        increaseColor="#9ca3af" // neutro
+        decreaseColor="#9ca3af" // neutro
+      />
+    )
+  }
 
-  // 🔹 Mantemos todos os ciclos retornados pelo endpoint
+
 const todosCiclos = [...dados.dados_grafico].slice(-5)
 
-  // 🔹 Prepara a lista de valores para o gráfico
+
   const chartData = todosCiclos.map(d => ({ value: d.depositos_identificados }))
 
-  // 🔹 Total do ciclo selecionado (destacado no gráfico)
+
   const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.depositos_identificados ?? 0
 
   return (
     <CardMetrica
       title="Depósitos Identificados"
-      data={chartData} // envia todos os ciclos para o gráfico
-      currentTotal={currentTotal} // valor do ciclo selecionado
-      previousTotal={dados.resumo_ciclo_atual.dados_do_ultimo_ciclo} // valor do último ciclo
-      increaseColor="#fa9726ff"
-      decreaseColor="#fa9726ff"
+      data={chartData} 
+      currentTotal={currentTotal}
+      previousTotal={dados.resumo_ciclo_atual.dados_do_ultimo_ciclo}
+      increaseColor="#d59100ff"
+      decreaseColor="#0469c7ff"
       showPercentage={false}
     />
   )
