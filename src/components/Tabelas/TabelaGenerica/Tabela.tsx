@@ -10,7 +10,7 @@ interface TabelaProps<TData extends object> {
 
 export default function Tabela<TData extends object>({ table }: TabelaProps<TData>) {
     return (
-        <CardContent className="p-0 min-w-[320px] overflow-x-auto w-full">
+        <CardContent className="p-0 min-w-[180px] overflow-x-auto w-full">
             <div className="w-full overflow-x-auto">
                 <Table className="text-fluid-large min-w-max">
                     {/* Cabeçalho */}

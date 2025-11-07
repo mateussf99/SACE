@@ -1,28 +1,86 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import RegistroTabela, { normalize } from "@/components/Tabelas/ImoveisVisitados/Index"
 import AreasdeVisita from "@/components/Tabelas/AreasVisita/Index"
 import type { BackendRow, RowData } from "@/components/Tabelas/ImoveisVisitados/Index"
+import type { BackendRow as AreaBackendRow } from "@/components/Tabelas/AreasVisita/Index"
+import DenunciasTabela, { type Denuncia } from "@/components/Tabelas/Denuncias/Index"
+import { ConfirmarCasosModal } from "@/components/atualizarFocosConfirmados/index"
+
+
 import { useRegistros } from "@/hooks/useRegistros"
 import { Button } from "@/components/ui/button"
-import { ClipboardPlus, FileText, Loader2 } from "lucide-react"
+import { ClipboardPlus, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react"
 import { useAuth } from "@/contexts/AuthContext"
-import { usePeriod } from "@/contexts/PeriodContext";
-import { api } from "@/services/api";
-import { useState } from "react";
+import { usePeriod } from "@/contexts/PeriodContext"
+import { api } from "@/services/api"
+import DoencasConfirmadasModal from "@/components/doencas/Index"
+
+
+function decodeJwtPayload<T = any>(token: string | null): T | null {
+  if (!token) return null
+  try {
+    const [, payloadB64] = token.split(".")
+    if (!payloadB64) return null
+    const json = atob(payloadB64.replace(/-/g, "+").replace(/_/g, "/"))
+    return JSON.parse(json) as T
+  } catch {
+    return null
+  }
+}
+
+const coerceNum = (v: unknown): number | null => {
+  if (v == null) return null
+  const n = typeof v === "number" ? v : Number(String(v).trim())
+  return Number.isFinite(n) ? n : null
+}
+
+type JwtPayload = {
+  agente_id?: number | string
+  nivel_de_acesso?: string
+}
+
+type AreasDenunciasResponse = {
+  areas_de_visitas: AreaBackendRow[]
+  denuncias: Denuncia[]
+}
 
 export default function PaginaListas() {
   const { accessLevel } = useAuth()
   const role = (accessLevel ?? "").toLowerCase()
+  const isAgente = role.includes("agente")
   const canSeeReport = role.includes("admin") || role.includes("supervisor")
-  const { year, cycle } = usePeriod();
+  const { year, cycle } = usePeriod()
+  const [doencasModalOpen, setDoencasModalOpen] = useState(false)
+
+const [casosAgenteModalOpen, setCasosAgenteModalOpen] = useState(false) 
+const [agenteId, setAgenteId] = useState<number | null>(null) 
+
 
   const { raw: _raw, setRaw, normalized } =
     useRegistros<BackendRow, RowData>(normalize)
 
   const [downloading, setDownloading] = useState(false)
 
-  function getFilenameFromDisposition(disposition?: string | null, fallback = "relatorio.pdf") {
+  const [areasAgente, setAreasAgente] = useState<AreaBackendRow[]>([])
+  const [denunciasAgente, setDenunciasAgente] = useState<Denuncia[]>([])
+  const [loadingAgenteDados, setLoadingAgenteDados] = useState(false)
+  const [erroAgenteDados, setErroAgenteDados] = useState<string | null>(null)
+
+
+  const [showAreas, setShowAreas] = useState(true)
+  const [showDenuncias, setShowDenuncias] = useState(true)
+  const [showVisitados, setShowVisitados] = useState(true)
+  const [showNaoVisitados, setShowNaoVisitados] = useState(true)
+
+  function getFilenameFromDisposition(
+    disposition?: string | null,
+    fallback = "relatorio.pdf",
+  ) {
     if (!disposition) return fallback
-    const match = /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(disposition)
+    const match =
+      /filename\*=UTF-8''([^;]+)|filename="?([^"]+)"?/i.exec(disposition)
     const name = decodeURIComponent(match?.[1] || match?.[2] || "")
     return name || fallback
   }
@@ -32,9 +90,10 @@ export default function PaginaListas() {
       setDownloading(true)
       const url = `/summary_pdf/${encodeURIComponent(String(year))}/${encodeURIComponent(String(cycle))}`
       const response = await api.get(url, { responseType: "blob" })
-      const filename =
-        getFilenameFromDisposition(response.headers["content-disposition"], `relatorio-trabalho-${year}-ciclo-${cycle}.pdf`)
-
+      const filename = getFilenameFromDisposition(
+        response.headers["content-disposition"],
+        `relatorio-trabalho-${year}-ciclo-${cycle}.pdf`,
+      )
       const blobUrl = window.URL.createObjectURL(new Blob([response.data], { type: "application/pdf" }))
       const a = document.createElement("a")
       a.href = blobUrl
@@ -51,15 +110,83 @@ export default function PaginaListas() {
     }
   }
 
+useEffect(() => {
+  if (!isAgente) return
+
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+  if (!token) return
+
+  const payload = decodeJwtPayload<JwtPayload>(token)
+  const id = coerceNum(payload?.agente_id)
+  if (id == null) return
+
+  setAgenteId(id) 
+
+  const carregar = async () => {
+    setLoadingAgenteDados(true)
+    setErroAgenteDados(null)
+    try {
+      const { data } = await api.get<AreasDenunciasResponse>(
+        `/area_de_visita_denuncias/${id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      )
+      setAreasAgente(data.areas_de_visitas ?? [])
+      setDenunciasAgente(data.denuncias ?? [])
+    } catch (e) {
+      console.error(e)
+      setErroAgenteDados(
+        "Erro ao carregar áreas de visita e denúncias do agente.",
+      )
+      setAreasAgente([])
+      setDenunciasAgente([])
+    } finally {
+      setLoadingAgenteDados(false)
+    }
+  }
+
+  carregar()
+}, [isAgente])
+
+
+  const Header = ({
+    title,
+    open,
+    onToggle,
+  }: {
+    title: string
+    open: boolean
+    onToggle: () => void
+  }) => (
+    <button
+      onClick={onToggle}
+      className="flex text-left text:sm md:text-lg lg:text-xl 2xl:text-2xl font-semibold text-gray-800 px-4 py-3 "
+    >
+      <span>{title}</span>
+      {open ? (
+        <ChevronUp className="w-7 h-7 text-blue-700 ml-2" />
+      ) : (
+        <ChevronDown className="w-7 h-7 text-blue-700 ml-2" />
+      )}
+    </button>
+  )
+
   return (
     <div className="bg-secondary min-h-screen w-full pt-2 flex flex-col gap-6 px-4 pb-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Button
-          className="h-20 w-full rounded-md px-5 font-medium text-white text-base md:text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-sm"
-        >
-          <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
-          Cadastrar  casos confirmados
-        </Button>
+       <Button
+  className="h-20 w-full rounded-md px-5 font-medium text-white text-base md:text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-sm "
+  onClick={() => {
+    if (isAgente) {
+      setCasosAgenteModalOpen(true) 
+    } else {
+      setDoencasModalOpen(true) 
+    }
+  }}
+>
+  <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
+  {isAgente ? "Atualizar focos positivos" : "Cadastrar casos confirmados"}
+</Button>
 
         {canSeeReport && (
           <Button
@@ -78,28 +205,88 @@ export default function PaginaListas() {
         )}
       </div>
 
-      <div className="rounded-lg bg-white shadow">
-        <AreasdeVisita />
+      {isAgente && erroAgenteDados && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          {erroAgenteDados}
+        </div>
+      )}
+
+      {/* IMÓVEIS NÃO INSPECIONADOS */}
+      <div className="">
+        <Header
+          title="Imóveis não visitados"
+          open={showNaoVisitados}
+          onToggle={() => setShowNaoVisitados(p => !p)}
+        />
+        {showNaoVisitados && (
+          <div className="p-2 bg-white rounded-xl">
+            <RegistroTabela normalized={normalized} setRaw={setRaw} variant="apenasNaoInspecionados" />
+          </div>
+        )}
       </div>
 
-      <div className="rounded-lg bg-white shadow">
-        <RegistroTabela
-          normalized={normalized}
-          setRaw={setRaw}
-          variant="semNaoInspecionados"
-          titulo="Imóveis visitados"
-        />
+            {/* DENÚNCIAS */}
+      {isAgente && (
+        <div className="">
+          <Header title="Denúncias" open={showDenuncias} onToggle={() => setShowDenuncias(p => !p)} />
+          {showDenuncias && (
+            <div className="p-2 bg-white rounded-xl">
+              <DenunciasTabela initialData={denunciasAgente} disableOwnFetch />
+              {loadingAgenteDados && (
+                <p className="text-xs text-gray-500 mt-2">Carregando dados...</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* IMÓVEIS VISITADOS */}
+      <div className="">
+        <Header title="Imóveis visitados" open={showVisitados} onToggle={() => setShowVisitados(p => !p)} />
+        {showVisitados && (
+          <div className="p-2 bg-white rounded-xl">
+            <RegistroTabela normalized={normalized} setRaw={setRaw} variant="semNaoInspecionados" />
+          </div>
+        )}
       </div>
 
-      {/* 2) Tabela APENAS não-inspecionados */}
-      <div className="rounded-lg bg-white shadow">
-        <RegistroTabela
-          normalized={normalized}
-          setRaw={setRaw}
-          variant="apenasNaoInspecionados"
-          titulo="Imóveis não inspecionados"
-        />
+      {/* ÁREAS DE VISITA */}
+      {isAgente && ( 
+         <div className="">
+        <Header title="Áreas de visita" open={showAreas} onToggle={() => setShowAreas(p => !p)} />
+        {showAreas && (
+          <div className="p-2 bg-white rounded-xl">
+            {isAgente ? (
+              <AreasdeVisita initialDataRaw={areasAgente} disableOwnFetch />
+            ) : (
+              <AreasdeVisita />
+            )}
+            {isAgente && loadingAgenteDados && (
+              <p className="text-xs text-gray-500 mt-2">Carregando dados...</p>
+            )}
+          </div>
+        )}
       </div>
+           )}
+
+
+{!isAgente && (
+  <DoencasConfirmadasModal
+    open={doencasModalOpen}
+    onOpenChange={setDoencasModalOpen}
+  />
+)}
+
+
+{isAgente && agenteId != null && (
+  <ConfirmarCasosModal
+    open={casosAgenteModalOpen}
+    onOpenChange={setCasosAgenteModalOpen}
+    agenteId={agenteId}
+  />
+)}
+
+
     </div>
   )
 }

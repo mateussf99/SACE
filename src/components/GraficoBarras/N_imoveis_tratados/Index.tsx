@@ -50,21 +50,16 @@ function calcularResumo(rawRegistros: RegistroCampo[] | null | undefined): Resum
     (acc, r) => {
       const status = (r.imovel_status ?? "").toLowerCase().trim()
 
-      //  Focal (larvicida)
       const larvicidasLen = Array.isArray(r.larvicidas) ? r.larvicidas.length : 0
       if (larvicidasLen > 0) acc.focal += 1
 
-      //  Perifocal (adulticida)
       const adulticidasLen = Array.isArray(r.adulticidas) ? r.adulticidas.length : 0
       if (adulticidasLen > 0) acc.perifocal += 1
 
-      //  Inspecionados
       if (status === "inspecionado") acc.inspecionados += 1
 
-      //  Recusas
       if (status === "recusado") acc.recusas += 1
 
-      //  Fechados
       if (status === "fechado") acc.fechados += 1
 
       const numeroAmostra = r.numero_da_amostra
@@ -98,8 +93,6 @@ function calcularResumo(rawRegistros: RegistroCampo[] | null | undefined): Resum
 
   return resumo
 }
-
-
 
 export default function GraficoImoveisTratados() {
   const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod()
@@ -136,7 +129,7 @@ export default function GraficoImoveisTratados() {
           err?.response?.data?.message ||
           err?.message ||
           "Falha ao carregar registros de campo."
-        setError(msg) // toast será disparado pelo useEffect acima
+        setError(msg) 
       } finally {
         setLoading(false)
       }
@@ -185,9 +178,6 @@ export default function GraficoImoveisTratados() {
     )
   }
 
-
-
-
   const data = [
     { name: "Focal", value: focal },
     { name: "Perifocal", value: perifocal },
@@ -196,9 +186,7 @@ export default function GraficoImoveisTratados() {
 
   return (
     <Card className="w-full h-full rounded-lg p-0 border border-none ">
-
-
-      <CardContent className="p-0 mr-2 h-full">
+      <CardContent className="p-2 mr-1 h-full">
 
         <div className="grid gap-0 xl:grid-cols-[1.7fr_1fr] items-center  h-full">
 

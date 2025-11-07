@@ -29,18 +29,28 @@ import {
 export type RowData = {
   area_de_visita_id?: number
   setor?: string
-  estado?: string
+  numero_quarteirao?: number
   municipio?: string
   logradouro?: string
   agente?: string
   bairro?: string
+  estado?: string
+  status?: string
 }
 
 export interface BackendRow extends RowData {
   cep?: string
   logadouro?: string
+  status?: string
   numero_quarteirao?: number
   agentes?: { agente_id?: number; nome?: string; situacao_atual?: boolean }[]
+}
+
+type AreasTabelaProps = {
+  /** lista bruta vinda de outro endpoint (ex: areas_de_visitas de /area_de_visita_denuncias/{agente_id}) */
+  initialDataRaw?: BackendRow[]
+  /** se true, NÃO faz GET /area_de_visita – usa apenas initialDataRaw (ou fica vazia) */
+  disableOwnFetch?: boolean
 }
 
 /* ===== Helpers gerais ===== */
@@ -66,6 +76,7 @@ const fieldLabels: Record<string, string> = {
   setor: "Identificador do Setor",
   estado: "Estado",
   municipio: "Município",
+  status: "Status",
   cep: "CEP",
   bairro: "Bairro",
   numero_quarteirao: "Número do Quarteirão",
@@ -73,17 +84,26 @@ const fieldLabels: Record<string, string> = {
   logradouro: "Logradouro",
   agentes: "Agente Responsável",
 }
+const STATUS_LABEL: Record<string, string> = {
+  "Não visitado": "Não visitado",
+  "Em andamento": "Em andamento",
+  "Visitado": "Visitado",
+}
+
 
 const normalize = (r: BackendRow): RowData => {
   const safe = (v?: unknown) => (typeof v === "string" && v.trim() ? v : "Não informado")
   return {
     area_de_visita_id: r.area_de_visita_id,
     setor: safe(r.setor),
+    numero_quarteirao: r.numero_quarteirao,
     estado: safe(r.estado),
     municipio: safe(r.municipio),
     logradouro: safe(r.logradouro ?? r.logadouro),
     agente: r.agentes?.length ? r.agentes.map(a => a.nome).join(", ") : "Não informado",
     bairro: safe(r.bairro),
+    status: r.status && STATUS_LABEL[r.status] ? r.status : "Não visitado",
+
   }
 }
 
@@ -104,7 +124,10 @@ const deletarAreas = async (ids: number[]) => {
   }
 }
 
-export default function Index() {
+export default function Index({
+  initialDataRaw,
+  disableOwnFetch = false,
+}: AreasTabelaProps) {
   const [data, setData] = useState<RowData[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
   const [filters, setFilters] = useState<Record<string, string[]>>({ setor: [], tipo: [], bairro: [] })
@@ -119,7 +142,7 @@ export default function Index() {
   const [agentesOptions, setAgentesOptions] = useState<{ label: string; value: number }[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmDescription, setConfirmDescription] = useState("")
-  const [confirmAction, setConfirmAction] = useState<() => void>(() => {})
+  const [confirmAction, setConfirmAction] = useState<() => void>(() => { })
 
   const token = typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
   const accessLevelLS = typeof window !== "undefined" ? localStorage.getItem("auth_access_level") : null
@@ -170,17 +193,32 @@ export default function Index() {
       setLoading(true)
       setError(null)
       try {
-        const { data: res } = await api.get("/area_de_visita", {
-          headers: { Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}` },
-        })
+        let allRaw: BackendRow[] = []
 
-        let allRaw: BackendRow[] = Array.isArray(res) ? (res as BackendRow[]) : []
-        if (mustFilterByAgente) {
-          allRaw = allRaw.filter(
-            item =>
-              Array.isArray(item.agentes) &&
-              item.agentes.some(a => coerceNum(a?.agente_id) === agenteId),
-          )
+        if (initialDataRaw && initialDataRaw.length) {
+
+          allRaw = initialDataRaw
+        } else {
+          if (disableOwnFetch) {
+
+            setData([])
+            setTotalRows(0)
+            return
+          }
+
+          const { data: res } = await api.get("/area_de_visita", {
+            headers: { Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}` },
+          })
+
+          allRaw = Array.isArray(res) ? (res as BackendRow[]) : []
+
+          if (mustFilterByAgente) {
+            allRaw = allRaw.filter(
+              item =>
+                Array.isArray(item.agentes) &&
+                item.agentes.some(a => coerceNum(a?.agente_id) === agenteId),
+            )
+          }
         }
 
         let all: RowData[] = allRaw.map(normalize)
@@ -211,7 +249,18 @@ export default function Index() {
       }
     }
     carregar()
-  }, [page, filters, globalFilter, token, accessLevel, mustFilterByAgente, agenteId])
+  }, [
+    page,
+    filters,
+    globalFilter,
+    token,
+    accessLevel,
+    mustFilterByAgente,
+    agenteId,
+    initialDataRaw,
+    disableOwnFetch,
+  ])
+
 
   const AcoesCell = ({
     row,
@@ -303,8 +352,8 @@ export default function Index() {
           </span>
         ),
       },
-      { accessorKey: "estado", header: "Estado" },
-      { accessorKey: "municipio", header: "Município" },
+
+      { accessorKey: "bairro", header: "Bairro" },
       {
         accessorKey: "logradouro",
         header: "Logradouro",
@@ -312,8 +361,34 @@ export default function Index() {
           <span className="font-semibold text-gray-700">{getValue() as string}</span>
         ),
       },
-      { accessorKey: "agente", header: "Agente responsável" },
-      { accessorKey: "bairro", header: "Bairro" },
+      { accessorKey: "numero_quarteirao", header: "N° Quarteirão" },
+      {
+        accessorKey: "status",
+        header: "Status",
+        cell: ({ getValue }) => {
+          const valor = getValue() as string
+          const cores: Record<string, string> = {
+            "Visitado": "bg-green-100 text-green-800",
+            "Em andamento": "bg-yellow-100 text-yellow-800",
+            "Não visitado": "bg-gray-100 text-gray-700",
+          }
+          const cor = cores[valor] || "bg-gray-100 text-gray-700"
+          return (
+            <span className={`px-2 py-1 text-xs font-semibold rounded ${cor}`}>
+              {valor}
+            </span>
+          )
+        },
+      },
+      ...(!isAgente
+        ? ([
+          {
+            accessorKey: "agente",
+            header: "Agente responsável",
+          } as ColumnDef<RowData>,
+        ] as ColumnDef<RowData>[])
+        : []),
+
       {
         id: "acoes",
         header: "Ações",
@@ -335,14 +410,7 @@ export default function Index() {
     if (!isAgente) {
       base.unshift({
         id: "select",
-        header: ({ table }) => (
-          <input
-            type="checkbox"
-            checked={table.getIsAllPageRowsSelected()}
-            onChange={table.getToggleAllPageRowsSelectedHandler()}
-            className="h-4 w-4 rounded border-2 border-blue-600"
-          />
-        ),
+        header: () => null,
         cell: ({ row }) => (
           <input
             type="checkbox"
@@ -487,8 +555,9 @@ export default function Index() {
     { key: "agente", label: "Agente responsável" },
   ]
 
+
   return (
-    <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
+    <Card className="space-y-4 min-w-[180px] p-2 lg:p-4 xl:p-6 border-none shadow-none">
       {selectedCount === 0 && (
         <TabelaFiltro<RowData>
           filtros={filtrosTabela}
@@ -555,14 +624,22 @@ export default function Index() {
           "numero_quarteirao",
           "logadouro",
           "agentes",
+          "status",
         ]}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
-        editableFields={["numero_quarteirao", "setor", "logadouro", "bairro"]}
+        editableFields={["numero_quarteirao", "setor", "logadouro", "bairro", "status",]}
         nomeDoCampo="nome"
         fieldLabels={fieldLabels}
+        selectFields={["status"]}
         sendAsJson
-        selectOptions={{ agentes: agentesOptions }}
+        selectOptions={{
+          agentes: agentesOptions,
+          status: Object.entries(STATUS_LABEL).map(([value, label]) => ({
+            value,
+            label,
+          })),
+        }}
         onBeforeSubmit={handleSubmitCustom}
         renderField={renderField}
         fieldsTwoColumns={[

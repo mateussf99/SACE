@@ -13,7 +13,7 @@ export type UseRegistrosState<Raw, Row> = {
   reload: () => Promise<void>
 }
 
-/** Decodifica o payload do JWT sem libs externas */
+
 function decodeJwtPayload<T = any>(token: string | null): T | null {
   if (!token) return null
   try {
@@ -38,11 +38,7 @@ function normalizeLevel(v: unknown): string | null {
   return s || null
 }
 
-/**
- * Busca /registro_de_campo/{year}/{cycle}
- * - Se nível = "agente" => filtra por agente_id do JWT
- * - Se nível = "supervisor" (ou outro) => sem filtro (lista completa)
- */
+
 export function useRegistros<Raw, Row>(
   normalizer: (r: Raw) => Row
 ): UseRegistrosState<Raw, Row> {
@@ -55,26 +51,24 @@ export function useRegistros<Raw, Row>(
   const accessLevelLS =
     typeof window !== "undefined" ? localStorage.getItem("auth_access_level") : null
 
-  // Lê claims do JWT (ex.: agente_id, nivel_de_acesso)
   const payload = useMemo(
     () => decodeJwtPayload<{ agente_id?: number | string; nivel_de_acesso?: string }>(token),
     [token]
   )
 
   const agenteId = useMemo(() => coerceNum(payload?.agente_id), [payload])
-  // Prioriza claim do token; se não vier, usa localStorage
+
   const accessLevel = useMemo(
     () => normalizeLevel(payload?.nivel_de_acesso) ?? normalizeLevel(accessLevelLS),
     [payload, accessLevelLS]
   )
 
   const isAgente = accessLevel === "agente"
-  //const isSupervisor = accessLevel === "supervisor"
-  // Política: se não for "agente", não filtra (supervisor ou outros níveis enxergam tudo)
+
   const mustFilterByAgente = isAgente
 
   const load = async () => {
-    // Pré-checagens
+
     if (!token) {
       setError("Sessão inválida: token ausente.")
       setRaw([])
@@ -85,7 +79,7 @@ export function useRegistros<Raw, Row>(
       setRaw([])
       return
     }
-    // Se for necessário filtrar por agente, valide o claim
+
     if (mustFilterByAgente && agenteId == null) {
       setError("Não foi possível identificar o agente_id no token.")
       setRaw([])
@@ -118,8 +112,7 @@ export function useRegistros<Raw, Row>(
 
   useEffect(() => {
     void load()
-    // Recarrega quando período, token ou nível mudarem
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
   }, [year, cycle, token, accessLevel])
 
   const normalized = useMemo(() => raw.map(normalizer), [raw, normalizer])

@@ -73,7 +73,7 @@ export default function Index({
 
   let mainColor: string
   if (!hasTrendInfo || isSame) {
-    mainColor = bgColor ? "#ffffff" : "#6b7280" // gray-500
+    mainColor = bgColor ? "#ffffff" : "#254078ff" 
   } else if (isIncrease) {
     mainColor = increaseColor
   } else {
@@ -82,18 +82,15 @@ export default function Index({
 
   const badgeColor = lightenColor(mainColor, hasTrendInfo ? 0.2 : 0.15)
 
-  // 🏷️ Conteúdo da badge
  let badgeLabel: string | null = null
   let TrendIcon: typeof TrendingUp | typeof TrendingDown | typeof MoveRight | null = null
 
   if (!hasTrendInfo) {
     badgeLabel = "Sem histórico"
   } else if (isSame) {
-    // mesmo valor: 0% de variação + ícone neutro
     badgeLabel = `${Math.abs(rawPercentChange).toFixed(1)}%`
     TrendIcon = MoveRight
   } else {
-    // aumento ou redução
     badgeLabel = `${Math.abs(rawPercentChange).toFixed(1)}%`
     TrendIcon = isIncrease ? TrendingUp : TrendingDown
   }
@@ -105,7 +102,7 @@ export default function Index({
 
   return (
     <Card
-      className={`overflow-auto min-w-[240px] h-full p-3 mb:p-5 border-none ${
+      className={`overflow-auto min-w-[170px] h-full p-3 mb:p-5 border-none ${
         bgColor ? "text-white" : ""
       }`}
       style={{
