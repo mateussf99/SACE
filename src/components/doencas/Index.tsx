@@ -17,7 +17,7 @@ import { usePeriod } from "@/contexts/PeriodContext"
 import { Card } from "../ui/card"
 
 type DoencaConfirmada = {
-  doenca_confirmada_id: number
+  doente_confirmado_id: number
   nome?: string
   tipo_da_doenca: string
   rua: string
@@ -381,7 +381,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
 
   const salvarEdicao = async () => {
     if (!editando) return
-    const id = editando.doenca_confirmada_id
+    const id = editando.doente_confirmado_id
     const payload = {
       nome: editando.nome?.trim() || undefined,
       tipo_da_doenca: editando.tipo_da_doenca.trim(),
@@ -404,7 +404,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
       alert(data?.message ?? "Registro atualizado com sucesso.")
       setLista(prev =>
         prev.map(item =>
-          item.doenca_confirmada_id === id ? { ...item, ...payload } : item,
+          item.doente_confirmado_id === id ? { ...item, ...payload } : item,
         ),
       )
       setEditando(null)
@@ -431,8 +431,8 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
       })
-      setLista(prev => prev.filter(item => item.doenca_confirmada_id !== id))
-      if (editando?.doenca_confirmada_id === id) setEditando(null)
+      setLista(prev => prev.filter(item => item.doente_confirmado_id !== id))
+      if (editando?.doente_confirmado_id === id) setEditando(null)
 
       setFeedbackMsg({
         type: "success",
@@ -545,11 +545,11 @@ const listaFiltrada = lista.filter(item =>
 
                   <div>
                    {listaFiltrada.map(item => (
-                      <div key={item.doenca_confirmada_id}>
+                      <div key={item.doente_confirmado_id}>
                         {/* Linha normal */}
                         <div
                           className={`grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-3 px-3 py-2 text-xs border-t items-center ${
-                            editando?.doenca_confirmada_id === item.doenca_confirmada_id
+                            editando?.doente_confirmado_id === item.doente_confirmado_id
                               ? "bg-gray-50"
                               : "bg-white"
                           }`}
@@ -576,7 +576,7 @@ const listaFiltrada = lista.filter(item =>
                               size="icon"
                               className="h-7 w-7"
                               type="button"
-                              onClick={() => setConfirmDeleteId(item.doenca_confirmada_id)}
+                              onClick={() => setConfirmDeleteId(item.doente_confirmado_id)}
                             >
                               <Trash2 className="w-3 h-3 text-red-600" />
                             </Button>
@@ -584,11 +584,11 @@ const listaFiltrada = lista.filter(item =>
                         </div>
 
                         {/* Linha de edição */}
-                        {editando?.doenca_confirmada_id === item.doenca_confirmada_id && (
+                        {editando?.doente_confirmado_id === item.doente_confirmado_id && (
                           <div className="border border-blue p-3 bg-gray-50 space-y-3">
                             <div className="flex items-center justify-between">
                               <h3 className="text-xs font-semibold text-gray-800">
-                                Editar registro #{editando.doenca_confirmada_id}
+                                Editar registro #{editando.doente_confirmado_id}
                               </h3>
                               <Button
                                 variant="ghost"
