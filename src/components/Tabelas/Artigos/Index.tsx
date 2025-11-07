@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-// --- TIPAGEM ---
+
 export type Artigo = {
   artigo_id?: number
   supervisor_id?: number
@@ -49,7 +49,7 @@ export type RowData = {
   imagem?: string
 }
 
-// --- CONSTANTES / HELPERS ---
+
 const filtros: FiltroConfig<RowData>[] = [
   { key: "data", label: "Intervalo de datas", type: "date" },
   { key: "supervisor", label: "Supervisor" },
@@ -162,7 +162,7 @@ function Index() {
     setConfirmOpen(true)
   }
 
-  // --- BUSCA DE DADOS ---
+
   useEffect(() => {
     const carregar = async () => {
       setLoading(true)
@@ -303,7 +303,7 @@ function Index() {
   })
 
   return (
-    <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
+    <Card className="space-y-4 min-w-[170px] p-2 lg:p-4 xl:p-6 border-none  shadow-none">
       <TabelaFiltro<RowData>
         filtros={filtros}
         globalFilter={globalFilter}

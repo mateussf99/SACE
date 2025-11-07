@@ -114,7 +114,7 @@ const renderFilterControl = (f: FiltroConfig<T>) =>
 
 
     return (
-        <CardHeader className="flex p-0 items-center justify-between min-w-[320px] w-full">
+        <CardHeader className="flex p-0 items-center justify-between min-w-[170px] w-full">
                 <>
                     <div className="flex items-center max-w-xs sm:max-w-sm 2xl:max-w-md flex-1 rounded-lg bg-blue-50  px-2">
                         <Search className="text-gray-400 w-4 h-4 mr-2" />

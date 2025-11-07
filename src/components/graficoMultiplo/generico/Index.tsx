@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { CartesianGrid, Line, LineChart, XAxis, YAxis, Legend } from "recharts"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
-interface DataItem { ciclo: string; [key: string]: string | number }
+
+
+interface DataItem { ciclo: string;[key: string]: string | number }
 
 interface GraficoProps {
   id: string
@@ -43,45 +45,62 @@ const CustomLegend = ({ payload }: { payload?: { value: string; color: string }[
     </div>
   </div>
 )
+const useIsMdUp = () => {
+  const [isMdUp, setIsMdUp] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+
+    const mq = window.matchMedia("(min-width: 768px)") 
+    const update = () => setIsMdUp(mq.matches)
+
+    update()
+    mq.addEventListener("change", update)
+    return () => mq.removeEventListener("change", update)
+  }, [])
+
+  return isMdUp
+}
+
 
 const sanitizeData = (data: unknown): DataItem[] =>
   Array.isArray(data)
     ? data.map(it => {
-        if (typeof it !== "object" || !it) return { ciclo: "N/A" }
-        const obj = it as Record<string, unknown>
-        return Object.fromEntries(
-          Object.entries(obj).map(([k, v]) => [
-            k,
-            k === "ciclo" ? String(v ?? "N/A") : +v! || 0,
-          ])
-        ) as DataItem
-      })
+      if (typeof it !== "object" || !it) return { ciclo: "N/A" }
+      const obj = it as Record<string, unknown>
+      return Object.fromEntries(
+        Object.entries(obj).map(([k, v]) => [
+          k,
+          k === "ciclo" ? String(v ?? "N/A") : +v! || 0,
+        ])
+      ) as DataItem
+    })
     : []
 
 export default function Index({ graficos, loadError }: IndexProps) {
   const [graficoIndex, setGraficoIndex] = useState(0)
-  const [navLoading] = useState(false) // remova o setNavLoading se não usa
-
+  const [navLoading] = useState(false) 
+  const isMdUp = useIsMdUp()
   const hasGraphs = graficos.length > 0
 
-  // 🔒 Garante índice válido mesmo se a lista de gráficos mudar
+
   const safeIndex = hasGraphs ? Math.min(graficoIndex, graficos.length - 1) : 0
 
   const current: GraficoProps = hasGraphs
     ? graficos[safeIndex]
     : {
-        id: "placeholder",
-        title: "Gráfico indisponível",
-        label: "",
-        dataInicial: [],
-        configInicial: {},
-      }
+      id: "placeholder",
+      title: "Gráfico indisponível",
+      label: "",
+      dataInicial: [],
+      configInicial: {},
+    }
 
   const chartData = hasGraphs ? sanitizeData(current.dataInicial) : []
 
   const seriesKeys = Object.keys(current.configInicial)
 
-  // ✅ Gráfico existe, mas dados estão vazios/zerados
+
   const isEmptyData =
     hasGraphs &&
     (
@@ -91,8 +110,9 @@ export default function Index({ graficos, loadError }: IndexProps) {
       )
     )
 
-  // ✅ Quando devemos mostrar o skeleton?
+
   const showSkeleton = !hasGraphs || isEmptyData || !!loadError
+
 
   const getColorForKey = useCallback(
     (key: string) => {
@@ -100,7 +120,7 @@ export default function Index({ graficos, loadError }: IndexProps) {
       return idx < 0
         ? BASE_PALETTE[0]
         : BASE_PALETTE[idx] ??
-            `hsl(${((idx - BASE_PALETTE.length) * 360) / 12},70%,50%)`
+        `hsl(${((idx - BASE_PALETTE.length) * 360) / 12},70%,50%)`
     },
     [current]
   )
@@ -112,20 +132,20 @@ export default function Index({ graficos, loadError }: IndexProps) {
   const handleNextGrafico = () =>
     !navLoading && setGraficoIndex(prev => (prev + 1) % graficos.length)
 
-  // 🔎 Mensagem dinâmica abaixo do gráfico, de acordo com o cenário
+
   let emptyTitle: string | null = null
   let emptySubtitle: string | null = null
 
-if (loadError || !hasGraphs) {
-  emptyTitle = "Erro ao carregar os dados."
-  emptySubtitle = "Tente novamente mais tarde ou verifique a conexão com o servidor."
-} else if (isEmptyData) {
-  emptyTitle = "Ainda não há dados para o período selecionado."
-  emptySubtitle = "Assim que novos registros forem adicionados, o gráfico será exibido aqui."
-}
+  if (loadError || !hasGraphs) {
+    emptyTitle = "Erro ao carregar os dados."
+    emptySubtitle = "Tente novamente mais tarde ou verifique a conexão com o servidor."
+  } else if (isEmptyData) {
+    emptyTitle = "Ainda não há dados para o período selecionado."
+    emptySubtitle = "Assim que novos registros forem adicionados, o gráfico será exibido aqui."
+  }
 
   return (
-    <Card className="rounded-2xl shadow-none p-4 w-full min-w-[350px] h-full border-none flex flex-col">
+    <Card className="rounded-2xl shadow-none p-4 w-full min-w-[170px] h-full border-none flex flex-col">
       <CardHeader className="flex items-center justify-between p-0">
         <CardTitle className="text-xs sm:text-lg md:text-xl xl:text-xl font-semibold">
           {current.title}
@@ -147,10 +167,9 @@ if (loadError || !hasGraphs) {
       <CardContent className="p-0 flex-1 flex flex-col">
         <ChartContainer
           config={current.configInicial}
-          className="w-full h-full flex-1 min-h-[250px] font-semibold text-[8px] md:text-[10px] lg:text-xs xl:text-sm 2xl:text-base"
+          className="w-full h-full flex-1 min-h-[240px] font-semibold text-[8px] md:text-[10px] lg:text-xs xl:text-sm 2xl:text-base"
         >
           {showSkeleton ? (
-            // ✅ SKELETON – sempre que não houver dados, gráficos ou houver erro
             <LineChart
               data={[
                 { ciclo: "1", valor: 2, valor2: 5 },
@@ -174,7 +193,6 @@ if (loadError || !hasGraphs) {
                 tickMargin={8}
                 tick={{ fill: "#9ca3af" }}
               />
-              {/* Linha 1 do skeleton */}
               <Line
                 type="linear"
                 dataKey="valor"
@@ -183,7 +201,6 @@ if (loadError || !hasGraphs) {
                 dot={{ r: 3, stroke: "#d1d5db", fill: "#e5e7eb" }}
                 isAnimationActive={false}
               />
-              {/* Linha 2 do skeleton */}
               <Line
                 type="linear"
                 dataKey="valor2"
@@ -194,7 +211,7 @@ if (loadError || !hasGraphs) {
               />
             </LineChart>
           ) : (
-            // ✅ GRÁFICO REAL
+            // GRÁFICO REAL
             <LineChart data={chartData} margin={{ left: 4, right: 4, top: 12 }}>
               <CartesianGrid stroke="#e5e7eb" />
               <XAxis
@@ -208,19 +225,24 @@ if (loadError || !hasGraphs) {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                label={{
-                  value: "Quantidade",
-                  angle: -90,
-                  position: "outsideLeft",
-                  style: {
-                    textAnchor: "middle",
-                    fill: "#45484cff",
-                    fontSize: 14,
-                    fontWeight: "bold",
-                  },
-                  dx: -20,
-                }}
+                label={
+                  isMdUp
+                    ? {
+                      value: "Quantidade",
+                      angle: -90,
+                      position: "outsideLeft",
+                      style: {
+                        textAnchor: "middle",
+                        fill: "#45484cff",
+                        fontSize: 14,
+                        fontWeight: "bold",
+                      },
+                      dx: -20,
+                    }
+                    : undefined
+                }
               />
+
               <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
               <Legend content={<CustomLegend />} />
               {seriesKeys.map(k => (

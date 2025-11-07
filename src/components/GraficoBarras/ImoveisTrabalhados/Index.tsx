@@ -32,7 +32,6 @@ export default function GraficoImoveisPorTipo() {
           }
         )
 
-        // Mapa direto dos valores do select
         const mapa: Record<string, "R" | "C" | "TB" | "PE"> = {
           "Residência": "R",
           "Comércio": "C",

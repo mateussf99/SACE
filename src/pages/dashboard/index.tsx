@@ -9,44 +9,40 @@ import AcoesDeBloqueio from "@/components/graficoMultiplo/acoesBloqueio/Index"
 import GraficoReincidencia from "@/components/GraficoBarras/Reincidencia/Index"
 import GraficoImoveisTratados from "@/components/GraficoBarras/N_imoveis_tratados/Index"
 import GraficoImoveisTrabalhados from "@/components/GraficoBarras/ImoveisTrabalhados/Index"
+import QuarteiroesTrabalhados from "@/components/Quarteiroes/index"
+
 
 function Index() {
   return (
     <div className="bg-secondary min-h-screen flex flex-col gap-4 p-4">
-      <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(4, 1fr)" }}>
+
+      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do primeiro bloco */}
 
         </div>
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do segundo bloco */}
-          < FocosPositivos />
+          <FocosPositivos />
         </div>
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do segundo bloco */}
-          < CasosConfirmados />
+          <CasosConfirmados />
         </div>
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do segundo bloco */}
-          < DepositosIdentificados />
+          <DepositosIdentificados />
         </div>
       </div>
 
-
-      {/* Linha 2 */}
-      <div className="grid gap-6" style={{ gridTemplateColumns: "repeat(2, 1fr)" }}>
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do primeiro bloco */}
           <ImoveisTrabalhadosPizza />
         </div>
         <div className="rounded-lg bg-white shadow p-0">
-          {/* Conteúdo do segundo bloco */}
           <DepositosTratadosPizza />
         </div>
       </div>
-      {/* Linha 3 */}
-    <div className="grid gap-4 grid-cols-[1fr_1.3fr]">
-        <div className=" rounded-lg bg-white shadow p-0">
+
+
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1fr_1.3fr]">
+        <div className="rounded-lg bg-white shadow p-0">
           <FocosEncontrados />
         </div>
         <div className="rounded-lg bg-white shadow p-0">
@@ -54,24 +50,32 @@ function Index() {
         </div>
       </div>
 
-      {/* Linha 4 (invertida) */}
-<div className="grid gap-4 grid-cols-[1.5fr_1fr]">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.5fr_1fr]">
         <div className="rounded-lg bg-white shadow p-0">
-          <GraficoImoveisTratados/>
+          <GraficoImoveisTratados />
         </div>
-        <div className=" rounded-lg bg-white shadow p-0">
-        <GraficoImoveisTrabalhados/>
+        <div className="rounded-lg bg-white shadow p-0">
+          <GraficoImoveisTrabalhados />
         </div>
       </div>
 
-        <div className="grid gap-6 grid-cols-[1fr_1.1fr]">
+      <div className="grid gap-6 grid-cols-1">
+        <div className="rounded-lg bg-white shadow p-0">
+          <QuarteiroesTrabalhados />
+        </div>
+      </div>
+      
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-[1fr_1.1fr]">
         <div className="rounded-lg bg-white shadow p-0">
           <GraficoReincidencia />
         </div>
-        <div className=" rounded-lg bg-white shadow p-0">
-          <AtividadesRealizadasBarras/>
+        <div className="rounded-lg bg-white shadow p-0">
+          <AtividadesRealizadasBarras />
         </div>
       </div>
+
+
+
     </div>
   )
 }

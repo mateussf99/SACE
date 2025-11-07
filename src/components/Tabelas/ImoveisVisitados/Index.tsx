@@ -1,8 +1,7 @@
 "use client"
 
 import { useState, useMemo, useCallback, useEffect } from "react"
-// + adicione
-import { FileQuestion } from "lucide-react"
+
 
 
 import type { VisibilityState } from "@tanstack/react-table"
@@ -23,7 +22,7 @@ import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 import { api } from "@/services/api"
 
-/* =============== Tipos (iguais aos seus) =============== */
+
 export type RowData = {
   registro_de_campo_id?: number
   setor?: string
@@ -34,6 +33,8 @@ export type RowData = {
   status?: string
   data?: string
   atividade?: string[]
+  numero_amostra?: string
+ 
 }
 
 export type BackendRow = {
@@ -43,13 +44,14 @@ export type BackendRow = {
   imovel_numero?: string
   imovel_tipo?: string
   imovel_status?: string
+   numero_da_amostra?: string
   ciclo?: { ano_de_criacao?: string }
   larvicidas?: { tipo?: string; forma?: string; quantidade?: number }[]
   adulticidas?: { tipo?: string; quantidade?: number }[]
   [k: string]: any
 }
 
-/* =============== Constantes & helpers (iguais aos seus) =============== */
+
 const STATUS_LABEL: Record<string, string> = {
   inspecionado: "Inspecionado", tratado: "Tratado", bloqueado: "Bloqueado",
   fechado: "Fechado", recusado: "Recusado", visitado: "Visitado", nao_inspecionado: "Não visitado"
@@ -57,6 +59,9 @@ const STATUS_LABEL: Record<string, string> = {
 export const FIELD_LABELS: Record<string, string> = {
   registro_de_campo_id: "ID do Registro", area_de_visita: "Área de Visita",
   imovel_numero: "Nº do Imóvel", imovel_complemento: "Complemento",
+  numero_da_amostra: "Nº da amostra",
+  quantiade_tubitos: "Qtd. de tubitos",
+  observacao: "Observação",
   imovel_tipo: "Tipo de Imóvel", imovel_status: "Status",
   imovel_lado: "Lado da Rua", imovel_categoria_da_localidade: "Categoria da Localidade",
   formulario_tipo: "Tipo de Formulário", __label_depositos__: "Depósitos encontrados",
@@ -86,6 +91,7 @@ export const normalize = (r: BackendRow): RowData => {
     logradouro: safe(r.area_de_visita?.logadouro),
     numero: safe(r.imovel_numero),
     complemento: safe(r.imovel_complemento),
+    numero_amostra: safe(r. numero_da_amostra),
     tipo: safe(r.imovel_tipo),
     status: safe(r.imovel_status),
     data: fmtPt(r.ciclo?.ano_de_criacao),
@@ -397,12 +403,12 @@ export default function RegistroTabela({
   normalized,
   setRaw,
   variant = "semNaoInspecionados",
-  titulo = "Registros",
+
 }: {
   normalized: RowData[]
   setRaw: React.Dispatch<React.SetStateAction<BackendRow[]>>
   variant?: Variant
-  titulo?: string
+
 }) {
   const [globalFilter, setGlobalFilter] = useState("")
   const [filters, setFilters] = useState<Record<string, string[]>>({ setor: [], tipo: [], status: [], atividade: [] })
@@ -412,7 +418,7 @@ export default function RegistroTabela({
   const [rowSelection, setRowSelection] = useState<Record<string, boolean>>({})
   const [page, setPage] = useState({ pageIndex: 0, pageSize: 10 })
   const [totalRows, setTotalRows] = useState(0)
-  const [totalRegistros, setTotalRegistros] = useState(0)
+  // const [totalRegistros, setTotalRegistros] = useState(0)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
@@ -426,11 +432,11 @@ export default function RegistroTabela({
 
   const visibilityByVariant: Record<Variant, VisibilityState> = useMemo(() => ({
     semNaoInspecionados: {
-      // ex.: nenhuma coluna oculta
+
     },
     apenasNaoInspecionados: {
-      atividade: false,   // id da coluna "Atividades Realizadas"
-      complemento: false, // id da coluna "Complemento"
+      atividade: false,   
+      complemento: false, 
     },
     todos: {}
   }), [])
@@ -444,12 +450,8 @@ export default function RegistroTabela({
   }, [variant, visibilityByVariant])
 
 
-
-
-  // base por variante
   const base = useMemo(() => normalized.filter(r => passaVariant(r.status, variant)), [normalized, variant])
 
-  // filtros & paginação (inteiramente em memória)
   const filtered: RowData[] = useMemo(() => {
     const txt = (deferredGlobal ?? "").toLowerCase()
     const byGlobal = txt ? base.filter((r) => Object.values(r).some(v => String(v ?? "").toLowerCase().includes(txt))) : base
@@ -473,7 +475,8 @@ export default function RegistroTabela({
   }, [base, deferredGlobal, filters, dateRange])
 
   const paged: RowData[] = useMemo(() => {
-    setTotalRegistros(filtered.length); setTotalRows(filtered.length)
+    // setTotalRegistros(filtered.length); 
+    setTotalRows(filtered.length)
     const start = page.pageIndex * page.pageSize
     return filtered.slice(start, start + page.pageSize)
   }, [filtered, page.pageIndex, page.pageSize])
@@ -484,7 +487,6 @@ export default function RegistroTabela({
     [filtered]
   )
 
-  // colunas
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
    {accessorKey: "setor",
     header: "Identificador do setor",
@@ -565,7 +567,6 @@ export default function RegistroTabela({
     { key: "atividade", label: "Atividade Realizada" },
   ]
 
-  // merge local após salvar no modal
   const handleSavedFromModal = (updated: any) => {
     if (!updated?.registro_de_campo_id) return
     setRaw(prev =>
@@ -577,6 +578,9 @@ export default function RegistroTabela({
           imovel_complemento: updated.imovel_complemento ?? r.imovel_complemento,
           imovel_tipo: updated.imovel_tipo ?? r.imovel_tipo,
           imovel_status: updated.imovel_status ?? r.imovel_status,
+          numero_da_amostra: updated.numero_da_amostra ?? r.numero_da_amostra,
+        quantiade_tubitos: updated.quantiade_tubitos ?? r.quantiade_tubitos,
+        observacao: updated.observacao ?? r.observacao,
           li: typeof updated.li === "boolean" ? updated.li : r.li,
           pe: typeof updated.pe === "boolean" ? updated.pe : r.pe,
           t: typeof updated.t === "boolean" ? updated.t : r.t,
@@ -594,27 +598,19 @@ export default function RegistroTabela({
   const modalCampos: (keyof BackendRow | string)[] = [
     "registro_de_campo_id", "area_de_visita", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
     "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
+     "numero_da_amostra", "quantiade_tubitos",
     "__label_depositos__", ...DEPOSITOS, "larvicidas", "adulticidas",
     "__label_atividades__", ...BOOL_ATIVIDADES,
+    "observacao",
   ]
-  const isEmpty = !totalRegistros
+
 
   return (
-    <Card className="space-y-4 min-w-[350px] p-2 lg:p-4 xl:p-6 border-none">
+    <Card className="space-y-4 min-w-[180px] p-2 lg:p-4 xl:p-6 border-none  shadow-none">
       <div className="text-fluid-large font-bold text-gray-900 mb-2">
-        {titulo}: {totalRegistros}
       </div>
 
-      {isEmpty ? (
-        // 🌤️ Estado vazio elegante
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-300 bg-white py-10 px-4 text-center">
-          <div className="mb-3 rounded-full bg-blue-50 p-3">
-            <FileQuestion className="h-8 w-8 text-blue-600" />
-          </div>
-          <h3 className="text-base font-semibold text-gray-900">Nenhum registro encontrado</h3>
-
-        </div>
-      ) : (
+  
         <>
           <TabelaFiltro<RowData>
             filtros={filtros}
@@ -641,15 +637,16 @@ export default function RegistroTabela({
             open={isModalOpen}
             onOpenChange={setIsModalOpen}
             campos={modalCampos}
-            editableFields={["imovel_status", ...DEPOSITOS, "larvicidas", "adulticidas", ...BOOL_ATIVIDADES]}
+            editableFields={["imovel_complemento", "imovel_status", ...DEPOSITOS, "larvicidas", "adulticidas", ...BOOL_ATIVIDADES]}
             selectFields={["imovel_status"]}
             selectOptions={{ imovel_status: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })) }}
             fieldsTwoColumns={[
               "registro_de_campo_id", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
-              "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
+              "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",  "numero_da_amostra",
+  "quantiade_tubitos",
             ]}
             fieldsThreeColumns={[...DEPOSITOS, ...BOOL_ATIVIDADES]}
-            fieldsFullWidth={["area_de_visita", "larvicidas", "adulticidas"]}
+            fieldsFullWidth={["area_de_visita", "larvicidas", "adulticidas",  "observacao"]}
             fieldLabels={FIELD_LABELS}
             sendAsJson={false}
             onBeforeSubmit={buildRegistroCampoFormDataStrict}
@@ -661,7 +658,7 @@ export default function RegistroTabela({
           />
 
         </>
-      )}
+      
     </Card>
   )
 }

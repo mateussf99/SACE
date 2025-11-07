@@ -56,7 +56,6 @@ function Index({
     safeData.filter(d => !d.color),
   ]
 
-  // ✅ Detecta estado vazio (sem dados ou tudo zero)
   const isEmpty =
     !safeData.length || safeData.every(item => (item.value ?? 0) === 0)
 
@@ -136,7 +135,7 @@ function Index({
   }
 
   return (
-    <Card className="min-w-[300px] w-full h-full pl-2 pr-1 sm:p-5 border-none">
+    <Card className="min-w-[170px] w-full h-full pl-2 pr-1 sm:p-5 border-none">
       <CardHeader className="text-sm sm:text-base md:text-lg xl:text-2xl font-medium p-0">
         <CardTitle>{title || "Sem título"}</CardTitle>
       </CardHeader>
@@ -148,7 +147,7 @@ function Index({
             className="flex-1 max-w-full aspect-square min-w-[150px] sm:flex-[0_1_60%]"
           >
             {isEmpty ? (
-              // ✅ ESTADO VAZIO – gráfico donut skeleton em tons de cinza
+
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -197,7 +196,7 @@ function Index({
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              // ✅ GRÁFICO REAL
+              //  GRÁFICO REAL
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Tooltip
@@ -243,9 +242,9 @@ function Index({
             )}
           </ChartContainer>
 
-          {/* ✅ Área da legenda / texto lateral */}
+
           {isEmpty ? (
-            // 👉 Quando NÃO há dados: mensagem no lugar da legenda
+
             <div className="flex-1 flex items-center justify-center w-full">
               <p className="text-xs sm:text-sm md:text-base text-muted-foreground text-center px-4">
                 Ainda não há dados para o ciclo selecionado.
@@ -255,7 +254,7 @@ function Index({
               </p>
             </div>
           ) : (
-            // 👉 Quando há dados: legenda normal (desktop + mobile)
+
             <>
               <div className="hidden sm:block">
                 <Legend items={safeData} />
@@ -269,7 +268,7 @@ function Index({
                     </div>
                   </div>
                 )}
-                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1 justify-items-center px-2 w-full max-w-xs mx-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 justify-items-center px-2 w-full max-w-xs mx-auto">
                   {withColor.map(item => (
                     <Legend key={item.name} items={[item]} />
                   ))}

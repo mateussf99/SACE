@@ -34,7 +34,6 @@ function Index({
       value: isPercentage ? Math.min(d.value, 100) : d.value,
     }))
 
-  // ✅ Detecta estado vazio
   const isEmpty = !safeData.length || safeData.every((item) => (item.value ?? 0) === 0)
 
   const maxValue = Math.max(...safeData.map(d => d.value), 0)
@@ -72,7 +71,7 @@ function Index({
     numberOfBars <= 4 ? "30%" : numberOfBars <= 8 ? "15%" : "10%"
 
   return (
-    <Card className="min-w-[300px] h-full p-2 sm:p-5 border border-none shadow-none ">
+    <Card className="min-w-[170px] h-full p-2 sm:p-5 border border-none shadow-none ">
       <CardHeader className="p-0 flex justify-between items-center">
         <div>
           <CardTitle className="text-sm md:text-lg xl:text-xl font-semibold">

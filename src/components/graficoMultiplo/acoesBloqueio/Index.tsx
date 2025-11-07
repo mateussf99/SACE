@@ -98,12 +98,12 @@ export default function GraficoCiclosUnificado() {
 
  if (loading) {
   return (
-    <Card className="rounded-2xl shadow-none p-4 w-full min-w-[350px] h-full border-none flex flex-col animate-pulse">
+    <Card className="rounded-2xl shadow-none p-4 w-full min-w-[170px] h-full border-none flex flex-col animate-pulse">
       <CardHeader className="flex items-center justify-between p-0">
         <CardTitle className="text-xs sm:text-lg md:text-xl xl:text-xl font-semibold bg-gray-200 rounded w-1/3 h-4" /> <span>Carregando...</span>
       </CardHeader>
       <CardContent className="p-0 flex-1 flex flex-col">
-        <div className="w-full flex-1 bg-gray-100 rounded min-h-[250px]" />
+        <div className="w-full flex-1 bg-gray-100 rounded min-h-[150px]" />
       </CardContent>
     </Card>
   )
