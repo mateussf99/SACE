@@ -167,11 +167,16 @@ export function NudgeCard({ nudge, onUpdated, onDeleted, onSend }: {
       if (onSend) {
         await onSend(nudge.nudges_id)
       } else {
-        await api.post(`/nudges/${nudge.nudges_id}/send`)
+        const payload = {
+          title: nudge.titulo,
+          message: nudge.descricao,
+          url: nudge.url || ''
+        }
+        await api.post('/notificacao/send_all', payload)
       }
-      toast.success('Nudge enviado.')
+      toast.success('Notificação enviada.')
     } catch (e: any) {
-      const msg = e?.response?.data?.message || e?.message || 'Falha ao enviar nudge.'
+      const msg = e?.response?.data?.message || e?.message || 'Falha ao enviar notificação.'
       toast.error(msg)
     } finally {
       setEnviando(false)
