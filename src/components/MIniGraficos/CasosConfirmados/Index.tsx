@@ -8,14 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type DadosGrafico = {
   ano: number
-  total_Doentes: number
+  total_doentes: number
   ciclo: number
 }
 
 type CasosConfirmadosResponse = {
   dados_grafico: DadosGrafico[]
   resumo_ciclo_atual: {
-    total_Doentes: number
+    total_doentes: number
     dados_do_ultimo_ciclo: number
     porcentagem: string
     crescimento: "aumentou" | "diminuiu" | string
@@ -80,9 +80,9 @@ export default function GraficoCasosConfirmados() {
 const todosCiclos = [...dados.dados_grafico].slice(-5)
 
 
-  const chartData = todosCiclos.map(d => ({ value: d.total_Doentes }))
+  const chartData = todosCiclos.map(d => ({ value: d.total_doentes }))
 
-  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.total_Doentes?? 0
+  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.total_doentes?? 0
   console.log("Ciclo selecionado:", cicloSelecionado, "currentTotal:", currentTotal)
 
   return (
