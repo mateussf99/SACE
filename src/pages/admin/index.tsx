@@ -12,6 +12,7 @@ import TabelaDenuncias from "@/components/Tabelas/Denuncias/Index"
 import TabelaAreaDeVisitas from "@/components/Tabelas/AreasVisita/Index"
 import TabelaArtigos from "@/components/Tabelas/Artigos/Index"
 import FormNotificacao from "@/components/formNotificacao"
+import FormNudges from "@/components/formNudges"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -110,8 +111,13 @@ function Index() {
         )}
 
         {activeTab === "notificacoes" && (
-          <div className="bg-white rounded-lg p-2 sm:p-4">
-            <FormNotificacao />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg p-2 sm:p-4">
+              <FormNotificacao />
+            </div>
+            <div className="bg-white rounded-lg p-2 sm:p-4">
+              <FormNudges />
+            </div>
           </div>
         )}
       </div>
