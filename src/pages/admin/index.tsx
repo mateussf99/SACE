@@ -13,6 +13,7 @@ import TabelaAreaDeVisitas from "@/components/Tabelas/AreasVisita/Index"
 import TabelaArtigos from "@/components/Tabelas/Artigos/Index"
 import FormNotificacao from "@/components/formNotificacao"
 import FormNudges from "@/components/formNudges"
+import Nudges from "@/components/nudge"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -117,6 +118,9 @@ function Index() {
             </div>
             <div className="bg-white rounded-lg p-2 sm:p-4">
               <FormNudges />
+            </div>
+            <div className="w-full bg-white rounded-lg p-2 sm:p-4 col-span-1 lg:col-span-2">
+              <Nudges/>
             </div>
           </div>
         )}
