@@ -8,14 +8,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 type DadosGrafico = {
   ano: number
-  total_doencas: number
+  total_Doentes: number
   ciclo: number
 }
 
 type CasosConfirmadosResponse = {
   dados_grafico: DadosGrafico[]
   resumo_ciclo_atual: {
-    total_doencas: number
+    total_Doentes: number
     dados_do_ultimo_ciclo: number
     porcentagem: string
     crescimento: "aumentou" | "diminuiu" | string
@@ -35,7 +35,7 @@ export default function GraficoCasosConfirmados() {
       try {
         const token = localStorage.getItem("token") ?? ""
         const { data } = await api.get<CasosConfirmadosResponse>(
-          `/grafico/total_doencas_confirmadas/${anoSelecionado}/${cicloSelecionado}`,
+          `/grafico/total_doentes_confirmados/${anoSelecionado}/${cicloSelecionado}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
 
@@ -80,9 +80,9 @@ export default function GraficoCasosConfirmados() {
 const todosCiclos = [...dados.dados_grafico].slice(-5)
 
 
-  const chartData = todosCiclos.map(d => ({ value: d.total_doencas }))
+  const chartData = todosCiclos.map(d => ({ value: d.total_Doentes }))
 
-  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.total_doencas?? 0
+  const currentTotal = todosCiclos.find(d => d.ano === anoSelecionado && d.ciclo === cicloSelecionado)?.total_Doentes?? 0
   console.log("Ciclo selecionado:", cicloSelecionado, "currentTotal:", currentTotal)
 
   return (
