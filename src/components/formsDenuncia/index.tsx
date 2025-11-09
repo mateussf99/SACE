@@ -168,7 +168,7 @@ export default function FormsDenunciaDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="h-20 bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white text-xl border-none">
-          <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
+          <ClipboardPlus className="!h-6 !w-6 shrink-0" />
           Cadastrar denúncias
         </Button>
       </DialogTrigger>

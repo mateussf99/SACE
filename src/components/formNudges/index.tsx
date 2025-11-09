@@ -85,7 +85,7 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
               className='w-full h-15 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none'
               aria-label='Criar nudge'
             >
-              <Plus className='mr-1 !h-6 !w-6 shrink-0' />
+              <Plus className='!h-6 !w-6 shrink-0' />
               Criar nudge
             </Button>
       </DialogTrigger>

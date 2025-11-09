@@ -184,7 +184,7 @@ export default function PaginaListas() {
             }
           }}
         >
-          <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
+          <ClipboardPlus className="!h-6 !w-6 shrink-0" />
           {isAgente ? "Atualizar focos positivos" : "Cadastrar casos confirmados"}
         </Button>
 
@@ -196,9 +196,9 @@ export default function PaginaListas() {
             className="h-20 text-base md:text-lg bg-gradient-to-r from-white to-white hover:from-white hover:to-gray-400 text-blue-darck"
           >
             {downloading ? (
-              <Loader2 className="mr-1 !h-6 !w-6 shrink-0 animate-spin text-muted-foreground" />
+              <Loader2 className="!h-6 !w-6 shrink-0 animate-spin text-muted-foreground" />
             ) : (
-              <FileText className="mr-1 !h-6 !w-6 shrink-0 text-muted-foreground" />
+              <FileText className="!h-6 !w-6 shrink-0 text-muted-foreground" />
             )}
             {downloading ? "Gerando..." : "Baixar relatório de trabalho"}
           </Button>

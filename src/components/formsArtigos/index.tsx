@@ -84,7 +84,7 @@ export default function FormsArtigoDialog({ defaultOpen, onFinish }: Props) {
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button className="h-20   bg-gradient-to-r from-white to-white hover:from-white hover:to-gray-400 text-blue-darck text-xl  ">
-          <SquareChartGantt className="mr-1 !h-6 !w-6 shrink-0" />
+          <SquareChartGantt className="!h-6 !w-6 shrink-0" />
           Cadastrar artigo
         </Button>
       </DialogTrigger>
