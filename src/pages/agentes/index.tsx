@@ -54,8 +54,8 @@ export default function PaginaListas() {
   const { year, cycle } = usePeriod()
   const [doencasModalOpen, setDoencasModalOpen] = useState(false)
 
-const [casosAgenteModalOpen, setCasosAgenteModalOpen] = useState(false) 
-const [agenteId, setAgenteId] = useState<number | null>(null) 
+  const [casosAgenteModalOpen, setCasosAgenteModalOpen] = useState(false)
+  const [agenteId, setAgenteId] = useState<number | null>(null)
 
 
   const { raw: _raw, setRaw, normalized } =
@@ -110,43 +110,43 @@ const [agenteId, setAgenteId] = useState<number | null>(null)
     }
   }
 
-useEffect(() => {
-  if (!isAgente) return
+  useEffect(() => {
+    if (!isAgente) return
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
-  if (!token) return
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+    if (!token) return
 
-  const payload = decodeJwtPayload<JwtPayload>(token)
-  const id = coerceNum(payload?.agente_id)
-  if (id == null) return
+    const payload = decodeJwtPayload<JwtPayload>(token)
+    const id = coerceNum(payload?.agente_id)
+    if (id == null) return
 
-  setAgenteId(id) 
+    setAgenteId(id)
 
-  const carregar = async () => {
-    setLoadingAgenteDados(true)
-    setErroAgenteDados(null)
-    try {
-      const { data } = await api.get<AreasDenunciasResponse>(
-        `/area_de_visita_denuncias/${id}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
-      setAreasAgente(data.areas_de_visitas ?? [])
-      setDenunciasAgente(data.denuncias ?? [])
-    } catch (e) {
-      console.error(e)
-      setErroAgenteDados(
-        "Erro ao carregar áreas de visita e denúncias do agente.",
-      )
-      setAreasAgente([])
-      setDenunciasAgente([])
-    } finally {
-      setLoadingAgenteDados(false)
+    const carregar = async () => {
+      setLoadingAgenteDados(true)
+      setErroAgenteDados(null)
+      try {
+        const { data } = await api.get<AreasDenunciasResponse>(
+          `/area_de_visita_denuncias/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+        setAreasAgente(data.areas_de_visitas ?? [])
+        setDenunciasAgente(data.denuncias ?? [])
+      } catch (e) {
+        console.error(e)
+        setErroAgenteDados(
+          "Erro ao carregar áreas de visita e denúncias do agente.",
+        )
+        setAreasAgente([])
+        setDenunciasAgente([])
+      } finally {
+        setLoadingAgenteDados(false)
+      }
     }
-  }
 
-  carregar()
-}, [isAgente])
+    carregar()
+  }, [isAgente])
 
 
   const Header = ({
@@ -174,19 +174,19 @@ useEffect(() => {
   return (
     <div className="bg-secondary min-h-screen w-full pt-2 flex flex-col gap-6 px-4 pb-6">
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-       <Button
-  className="h-20 w-full rounded-md px-5 font-medium text-white text-base md:text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-sm "
-  onClick={() => {
-    if (isAgente) {
-      setCasosAgenteModalOpen(true) 
-    } else {
-      setDoencasModalOpen(true) 
-    }
-  }}
->
-  <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
-  {isAgente ? "Atualizar focos positivos" : "Cadastrar casos confirmados"}
-</Button>
+        <Button
+          className="h-20 w-full rounded-md px-5 font-medium text-white text-base md:text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-sm "
+          onClick={() => {
+            if (isAgente) {
+              setCasosAgenteModalOpen(true)
+            } else {
+              setDoencasModalOpen(true)
+            }
+          }}
+        >
+          <ClipboardPlus className="mr-1 !h-6 !w-6 shrink-0" />
+          {isAgente ? "Atualizar focos positivos" : "Cadastrar casos confirmados"}
+        </Button>
 
         {canSeeReport && (
           <Button
@@ -219,13 +219,13 @@ useEffect(() => {
           onToggle={() => setShowNaoVisitados(p => !p)}
         />
         {showNaoVisitados && (
-          <div className="p-2 bg-white rounded-xl">
+          <div className="p-2 bg-white rounded-xl ">
             <RegistroTabela normalized={normalized} setRaw={setRaw} variant="apenasNaoInspecionados" />
           </div>
         )}
       </div>
 
-            {/* DENÚNCIAS */}
+      {/* DENÚNCIAS */}
       {isAgente && (
         <div className="">
           <Header title="Denúncias" open={showDenuncias} onToggle={() => setShowDenuncias(p => !p)} />
@@ -251,40 +251,40 @@ useEffect(() => {
       </div>
 
       {/* ÁREAS DE VISITA */}
-      {isAgente && ( 
-         <div className="">
-        <Header title="Áreas de visita" open={showAreas} onToggle={() => setShowAreas(p => !p)} />
-        {showAreas && (
-          <div className="p-2 bg-white rounded-xl">
-            {isAgente ? (
-              <AreasdeVisita initialDataRaw={areasAgente} disableOwnFetch />
-            ) : (
-              <AreasdeVisita />
-            )}
-            {isAgente && loadingAgenteDados && (
-              <p className="text-xs text-gray-500 mt-2">Carregando dados...</p>
-            )}
-          </div>
-        )}
-      </div>
-           )}
+      {isAgente && (
+        <div className="">
+          <Header title="Áreas de visita" open={showAreas} onToggle={() => setShowAreas(p => !p)} />
+          {showAreas && (
+            <div className="p-2 bg-white rounded-xl">
+              {isAgente ? (
+                <AreasdeVisita initialDataRaw={areasAgente} disableOwnFetch />
+              ) : (
+                <AreasdeVisita />
+              )}
+              {isAgente && loadingAgenteDados && (
+                <p className="text-xs text-gray-500 mt-2">Carregando dados...</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
 
-{!isAgente && (
-  <DoencasConfirmadasModal
-    open={doencasModalOpen}
-    onOpenChange={setDoencasModalOpen}
-  />
-)}
+      {!isAgente && (
+        <DoencasConfirmadasModal
+          open={doencasModalOpen}
+          onOpenChange={setDoencasModalOpen}
+        />
+      )}
 
 
-{isAgente && agenteId != null && (
-  <ConfirmarCasosModal
-    open={casosAgenteModalOpen}
-    onOpenChange={setCasosAgenteModalOpen}
-    agenteId={agenteId}
-  />
-)}
+      {isAgente && agenteId != null && (
+        <ConfirmarCasosModal
+          open={casosAgenteModalOpen}
+          onOpenChange={setCasosAgenteModalOpen}
+          agenteId={agenteId}
+        />
+      )}
 
 
     </div>

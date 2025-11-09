@@ -1,8 +1,15 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "react-toastify"
 import { api } from "@/services/api"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
 type EditorArgs<T> = {
@@ -74,28 +81,12 @@ const dumpFormData = (fd: FormData) => {
         ? { key: k, value: `[File] name=${v.name} size=${v.size} type=${v.type}` }
         : { key: k, value: String(v) }
     )
-  console.groupCollapsed("🔎 FormData — campos")
-  console.table(rows)
-  rows.forEach(r => console.log(`→ ${r.key}:`, r.value))
-  console.groupEnd()
 }
 
-const dumpJson = (obj: any) => {
-  try {
-    console.groupCollapsed("🔎 JSON payload")
-    console.log(JSON.stringify(obj, null, 2))
-    console.groupEnd()
-  } catch {
-    console.log("🔎 JSON payload (raw):", obj)
-  }
-}
+
 
 const dumpAxiosError = (e: any) => {
-  console.group("🛑 PUT erro")
-  console.log("status:", e?.response?.status)
-  console.log("statusText:", e?.response?.statusText)
-  console.log("headers:", e?.response?.headers)
-  console.log("data:", e?.response?.data)
+
   const server = e?.response?.data
   if (server?.errors && typeof server.errors === "object") {
     const flat = Object.entries(server.errors).map(
@@ -103,11 +94,7 @@ const dumpAxiosError = (e: any) => {
     )
     console.log("fieldErrors:", flat.join(" | "))
   }
-  console.log("request url:", e?.config?.url)
-  console.log("request method:", e?.config?.method)
-  console.log("request headers:", e?.config?.headers)
-  console.log("request data (bruto):", e?.config?.data)
-  console.groupEnd()
+
 }
 
 const isPrimitiveArray = (arr: any[]) =>
@@ -130,6 +117,8 @@ const buildUnifiedPayload = <T extends Record<string, any>>(
   })
   return fd
 }
+const API_BASE = (api.defaults.baseURL || "").replace(/\/$/, "")
+
 
 /* ========== Componente ========== */
 
@@ -161,7 +150,6 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [modoEdicao, setModoEdicao] = useState(false)
-  const [mensagem, setMensagem] = useState<{ tipo: "sucesso" | "erro"; texto: string } | null>(null)
   const [novosValores, setNovosValores] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -174,9 +162,10 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           headers: { Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}` },
         })
         setData(flattenDeposito(res.data))
-      } catch {
+      } catch (e) {
         setError("Erro ao carregar dados")
         setData(null)
+        toast.error("Erro ao carregar dados")
       } finally {
         setLoading(false)
       }
@@ -189,7 +178,6 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   const handleAplicar = async () => {
     if (!id || !data || !canEdit) return
     setLoading(true)
-    setMensagem(null)
     setError(null)
     try {
       const payloadObj: Partial<T> = { ...data }
@@ -198,14 +186,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       })
       const unifiedPayload = buildUnifiedPayload(payloadObj, sendAsJson, onBeforeSubmit)
 
-      console.group("🚀 PUT /registro_de_campo debug")
-      console.log("endpoint:", `${endpoint}/${id}`)
-      console.log(
-        "headers.Content-Type:",
-        sendAsJson ? "application/json" : "(multipart será definido pelo browser)"
-      )
-      isFormData(unifiedPayload) ? dumpFormData(unifiedPayload) : dumpJson(unifiedPayload)
-      console.groupEnd()
+      // isFormData(unifiedPayload) ? dumpFormData(unifiedPayload) : dumpJson(unifiedPayload)
 
       const resp = await api.put(`${endpoint}/${id}`, unifiedPayload, {
         headers: {
@@ -219,14 +200,34 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         ? flattenDeposito(serverData)
         : flattenDeposito({ ...(data as any), ...(payloadObj as any) })
 
-      if (merged) setData(merged as T)
+      if (merged) {
+  setData(prev => {
+    const artigoId =
+      (merged as any)?.artigo_id ??
+      (merged as any)?.id ??
+      (prev as any)?.artigo_id
 
-      setMensagem({ tipo: "sucesso", texto: "Atualizado com sucesso!" })
+    if (artigoId) {
+      return {
+        ...merged,
+        [nomeDoCampo!]: `${API_BASE}/artigo/img/${artigoId}?t=${Date.now()}`
+      }
+    }
+    return merged as T
+  })
+}
+
+      toast.success("Atualizado com sucesso!")
       setModoEdicao(false)
       setFormData({})
       onSaved?.(merged ?? payloadObj)
     } catch (e: any) {
       dumpAxiosError(e)
+      const msg =
+        e?.response?.data?.message ||
+        e?.message ||
+        "Falha ao aplicar alterações."
+      toast.error(msg)
     } finally {
       setLoading(false)
     }
@@ -234,30 +235,75 @@ export default function ModalDetalhes<T extends Record<string, any>>({
 
   const labelOf = (campo: keyof T) => fieldLabels[campo] ?? String(campo)
 
-  const renderCampo = (campo: keyof T, valor: T[keyof T]) => {
+   const renderCampo = (campo: keyof T, valor: T[keyof T]) => {
     const value = formData[campo] ?? valor
     const isEditable = modoEdicao && editableFields.includes(campo)
     const label = labelOf(campo)
     const key = String(campo)
 
-    if (campo === (nomeDoCampo as keyof T) && value) {
+    // ===== Campo especial de imagem (para artigos) =====
+    if (campo === (nomeDoCampo as keyof T)) {
+     const isFile = typeof File !== "undefined" && (value as any) instanceof File
+
+
+      // Se NÃO for arquivo novo, pegamos a imagem atual pelo artigo_id
+      const artigoId =
+        (data as any)?.artigo_id ??
+        (data as any)?.id ??
+        (typeof value === "number" ? value : undefined)
+
+      const imageSrc =
+        !isFile && artigoId != null ? `${API_BASE}/artigo/img/${artigoId}` : undefined
+
       return (
-        <div className="flex flex-col gap-2">
-          <strong>{label}:</strong>
-          <img
-            src={`${endpoint}/img/${(data as any)?.artigo_id}`}
-            alt={String(valor)}
-            className="w-40 h-40 object-cover rounded border"
-          />
-          <span>{String(valor)}</span>
+        <div className="flex flex-col gap-2 text-blue-dark">
+          <strong className="text-sm">{label}:</strong>
+
+          {/* Imagem atual só aparece se NÃO tiver um arquivo novo selecionado */}
+          {!isFile && imageSrc && (
+            <img
+              src={imageSrc}
+              alt="Imagem do artigo"
+              className="w-40 h-40 object-cover rounded-md border border-blue-100"
+            />
+          )}
+
+          {/* Quando um novo arquivo é selecionado, mostra só o nome dele */}
+          {isFile && (
+            <span className="text-xs mt-1">
+              Nova imagem selecionada: {(value as File).name}
+            </span>
+          )}
+
+          {/* Nada de imprimir String(valor) aqui, pra não aparecer a URL */}
+          {/* <span className="text-sm">{String(valor)}</span>  <-- REMOVIDO */}
+
           {modoEdicao && (
-            <label className="cursor-pointer text-blue-700 underline text-sm mt-1">
+            <label className="cursor-pointer text-blue-dark underline text-xs mt-1">
               Selecionar nova imagem
               <input
                 hidden
                 type="file"
                 accept="image/*"
-                onChange={e => e.target.files?.[0] && handleChange(campo, e.target.files[0])}
+                onChange={e => {
+                  if (e.target.files?.[0]) {
+                    const file = e.target.files[0]
+
+                    // joga o arquivo no formData (value passa a ser File)
+                    handleChange(campo, file)
+
+                    // Se ainda quiser manter um preview local (sem mostrar URL do backend)
+                    const previewUrl = URL.createObjectURL(file)
+                    setData(prev =>
+                      prev
+                        ? ({
+                            ...prev,
+                            [campo]: previewUrl, // não é exibido enquanto value for File
+                          } as T)
+                        : prev
+                    )
+                  }
+                }}
               />
             </label>
           )}
@@ -266,22 +312,31 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     }
 
     if (isEditable && customEditors[key])
-      return customEditors[key]!({
-        field: campo,
-        value,
-        label,
-        onChange: next => handleChange(campo, next),
-        data,
-        formData,
-      })
+      return (
+        <div className="text-blue-dark text-sm">
+          {customEditors[key]!({
+            field: campo,
+            value,
+            label,
+            onChange: next => handleChange(campo, next),
+            data,
+            formData,
+          })}
+        </div>
+      )
 
     if (!isEditable && customViewers[key])
-      return customViewers[key]!({ field: campo, value, label, data })
+      return (
+        <div className="text-blue-dark text-sm">
+          {customViewers[key]!({ field: campo, value, label, data })}
+        </div>
+      )
 
     if (isEditable) {
+      // boolean
       if (typeof value === "boolean")
         return (
-          <label className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-blue-dark text-sm">
             <input
               type="checkbox"
               className="h-4 w-4"
@@ -292,14 +347,15 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           </label>
         )
 
+      // select
       if (selectFields.includes(campo))
         return (
-          <div className="flex flex-col w-full">
-            <strong>{label}:</strong>
+          <div className="flex flex-col w-full text-blue-dark text-sm">
+            <strong className="mb-1">{label}:</strong>
             <select
               value={value ?? ""}
               onChange={e => handleChange(campo, e.target.value)}
-              className="border border-gray-300 rounded-md px-3 py-2 w-full bg-white focus:ring-2 focus:ring-blue-500"
+              className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark"
             >
               <option value="">Selecione...</option>
               {selectOptions[campo]?.map((opt, i) => (
@@ -311,6 +367,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           </div>
         )
 
+      // array com "tags"
       if (Array.isArray(value) && arrayEditingStrategy === "primitive-tags" && isPrimitiveArray(value)) {
         const novoValor = novosValores[key] ?? ""
         const baseType = typeof (value[0] ?? "")
@@ -327,36 +384,36 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           handleChange(campo, (value as any[]).filter((_, x) => x !== i))
 
         return (
-          <div className="flex flex-col w-full mb-2">
+          <div className="flex flex-col w-full mb-2 text-blue-dark text-sm">
             <strong>{label}:</strong>
             <div className="flex flex-wrap gap-2 mt-1">
               {(value as any[]).map((item, i) => (
                 <div
                   key={i}
-                  className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm"
+                  className="flex items-center bg-secondary text-blue-dark rounded-full px-3 py-1 text-xs border border-blue-100"
                 >
                   <span>{String(item)}</span>
                   <button
                     onClick={() => removeAt(i)}
-                    className="ml-2 text-red-600 hover:text-red-800"
+                    className="ml-2 text-red-500 hover:text-red-600"
                   >
                     ×
                   </button>
                 </div>
               ))}
-              {!value.length && <span className="text-sm text-gray-500">Nenhum</span>}
+              {!value.length && <span className="text-xs text-gray-500">Nenhum</span>}
             </div>
             <div className="flex gap-2 mt-2">
               <input
                 type="text"
                 placeholder="Novo item"
-                className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500"
+                className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark text-sm"
                 value={novoValor}
                 onChange={e => setNovosValores(p => ({ ...p, [key]: e.target.value }))}
               />
               <button
                 onClick={add}
-                className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                className="bg-blue-dark text-white px-3 py-2 rounded-md text-xs hover:bg-blue"
               >
                 Inserir
               </button>
@@ -365,19 +422,21 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         )
       }
 
+      // texto padrão
       return (
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full text-blue-dark text-sm">
           <strong>{label}:</strong>
           <input
             type="text"
             value={String(value ?? "")}
             onChange={e => handleChange(campo, e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2 w-full focus:ring-2 focus:ring-blue-500 mt-1"
+            className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark mt-1"
           />
         </div>
       )
     }
 
+    // modo visualização
     if (Array.isArray(value)) {
       const joined = (value as any[])
         .map(item => {
@@ -399,7 +458,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         .join(", ")
 
       return (
-        <div className="flex flex-col">
+        <div className="flex flex-col text-blue-dark text-sm">
           <strong>{label}:</strong> {joined || "Não informado"}
         </div>
       )
@@ -408,16 +467,22 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     if (selectFields.includes(campo)) {
       const opt = selectOptions[campo]?.find(o => o.value === value)
       return (
-        <div className="flex flex-col">
+        <div className="flex flex-col text-blue-dark text-sm">
           <strong>{label}:</strong> {opt?.label ?? "Não informado"}
         </div>
       )
     }
 
-    return renderField ? (
-      renderField(campo, value as T[keyof T])
-    ) : (
-      <div>
+    if (renderField) {
+      return (
+        <div className="text-blue-dark text-sm">
+          {renderField(campo, value as T[keyof T])}
+        </div>
+      )
+    }
+
+    return (
+      <div className="text-blue-dark text-sm">
         <strong>{label}:</strong> {String(value ?? "Não informado")}
       </div>
     )
@@ -448,39 +513,31 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           setModoEdicao(false)
           setFormData({})
           setNovosValores({})
-          setMensagem(null)
         }
         onOpenChange(isOpen)
       }}
     >
-      <DialogContent className="sm:max-w-lg bg-white rounded-xl shadow-lg p-0">
-        <div className="sticky top-0 z-10 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/75 border-b px-6 py-4 rounded-t-xl">
-          <DialogHeader className="p-0">
-            {mensagem && (
-              <div
-                className={`py-2 px-3 rounded mb-2 text-sm ${
-                  mensagem.tipo === "sucesso"
-                    ? "bg-green-100 text-green-800"
-                    : "bg-red-100 text-red-800"
-                }`}
-              >
-                {mensagem.texto}
-              </div>
-            )}
-            <DialogTitle>Detalhes</DialogTitle>
-            <DialogDescription>Informações do item selecionado.</DialogDescription>
+      <DialogContent className="bg-white border-none sm:max-w-[660px] p-0 rounded-2xl shadow-lg overflow-hidden">
+        <div className="sticky top-0 z-10 bg-white border-b px-6 py-4 rounded-t-2xl">
+          <DialogHeader className="p-0 space-y-1">
+            <DialogTitle className="text-lg font-semibold text-blue-dark">
+              Detalhes
+            </DialogTitle>
+            <DialogDescription className="text-sm text-blue-dark">
+              Informações do item selecionado.
+            </DialogDescription>
           </DialogHeader>
         </div>
 
-        <div className="max-h-[80vh] overflow-y-auto px-6 py-4">
-          {loading && <p className="text-gray-500 py-4">Carregando...</p>}
-          {error && <p className="text-red-600 py-4">{error}</p>}
+        <div className="max-h-[80vh] overflow-y-auto px-6 py-4 bg-white text-blue-dark">
+          {loading && <p className="py-4 text-sm">Carregando...</p>}
+          {error && <p className="text-red-600 py-4 text-sm">{error}</p>}
 
           {data && !loading && !error && (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-6 gap-4">{renderCampos()}</div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-2 pt-3 border-t border-blue-dark/20 mt-2">
                 {!modoEdicao ? (
                   <Button
                     onClick={() => {
@@ -489,8 +546,12 @@ export default function ModalDetalhes<T extends Record<string, any>>({
                       setFormData({})
                     }}
                     disabled={!canEdit}
-                    className={!canEdit ? "opacity-50 cursor-not-allowed" : undefined}
-                    title={canEdit ? undefined : "Somente leitura para seu nível de acesso"}
+                    className={`bg-blue-dark text-white hover:bg-blue ${
+                      !canEdit ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
+                    title={
+                      canEdit ? undefined : "Somente leitura para seu nível de acesso"
+                    }
                   >
                     Editar
                   </Button>
@@ -503,14 +564,19 @@ export default function ModalDetalhes<T extends Record<string, any>>({
                         setFormData({})
                         setNovosValores({})
                       }}
+                      className="border-none bg-secondary text-blue-dark hover:bg-secondary/80"
                     >
                       Cancelar
                     </Button>
                     <Button
-                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      className="bg-emerald-600 text-white hover:bg-emerald-700"
                       onClick={handleAplicar}
                       disabled={!canEdit || loading}
-                      title={!canEdit ? "Você não tem permissão para aplicar alterações" : undefined}
+                      title={
+                        !canEdit
+                          ? "Você não tem permissão para aplicar alterações"
+                          : undefined
+                      }
                     >
                       Aplicar
                     </Button>
