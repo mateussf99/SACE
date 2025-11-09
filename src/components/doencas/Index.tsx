@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { api } from "@/services/api"
+import { toast } from "react-toastify"
 import {
   Dialog,
   DialogContent,
@@ -85,15 +86,14 @@ const normalizar = (s: string) =>
     .toLowerCase()
     .trim()
 
-
 async function criarDenunciaAutomaticamente(
   caso: CasoParaDenuncia,
   token: string,
   agenteResponsavelId?: number,
 ) {
   const hoje = new Date()
-  const dataDenuncia = hoje.toISOString().slice(0, 10) 
-  const horaDenuncia = hoje.toTimeString().slice(0, 8) 
+  const dataDenuncia = hoje.toISOString().slice(0, 10)
+  const horaDenuncia = hoje.toTimeString().slice(0, 8)
 
   const formData = new FormData()
 
@@ -116,9 +116,6 @@ async function criarDenunciaAutomaticamente(
     }`,
   )
 
-  
-
-  // se tiver agente escolhido, envia como responsável
   if (agenteResponsavelId != null) {
     formData.append("agente_responsavel_id", String(agenteResponsavelId))
   }
@@ -142,7 +139,6 @@ async function escolherAgenteMenosSobrecarregado(
 
   const resultados = await Promise.all(
     agentesAtivos.map(async agente => {
-
       if (cacheDenunciasPorAgente.has(agente.agente_id)) {
         return {
           agente_id: agente.agente_id,
@@ -177,7 +173,6 @@ async function escolherAgenteMenosSobrecarregado(
     }),
   )
 
-
   let escolhido = resultados[0]
   for (const r of resultados) {
     if (r.total < escolhido.total) {
@@ -193,8 +188,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const [lista, setLista] = useState<DoencaConfirmada[]>([])
   const [loadingLista, setLoadingLista] = useState(false)
   const [erro, setErro] = useState<string | null>(null)
-   const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod() 
-
+  const { year: anoSelecionado, cycle: cicloSelecionado } = usePeriod()
 
   const [novas, setNovas] = useState<NovaDoenca[]>([vazio])
   const [salvandoBatch, setSalvandoBatch] = useState(false)
@@ -203,11 +197,8 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const [salvandoEdicao, setSalvandoEdicao] = useState(false)
   const [deletandoId, setDeletandoId] = useState<number | null>(null)
 
-
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null)
-  const [feedbackMsg, setFeedbackMsg] = useState<{ type: "success" | "error"; text: string } | null>(
-    null,
-  )
+
 
   useEffect(() => {
     if (!open) return
@@ -276,7 +267,6 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
         },
       })
       alert(data?.message ?? "Registros criados com sucesso.")
-
 
       let areas: AreaDeVisita[] = []
       try {
@@ -367,7 +357,8 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
         403: "Apenas supervisores podem criar registros.",
         409: "Nenhum ciclo ativo encontrado para associar os registros.",
       }
-      alert(msg[status] || "Erro ao criar registros de doenças confirmadas.")
+      toast.error(msg[status] || "Erro ao criar registros de doenças confirmadas.")
+
     } finally {
       setSalvandoBatch(false)
     }
@@ -401,7 +392,8 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
       })
-      alert(data?.message ?? "Registro atualizado com sucesso.")
+     toast.success(data?.message ?? "Registro atualizado com sucesso.")
+
       setLista(prev =>
         prev.map(item =>
           item.doente_confirmado_id === id ? { ...item, ...payload } : item,
@@ -426,34 +418,20 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const deletarRegistro = async (id: number) => {
     setDeletandoId(id)
     try {
-      const { data } = await api.delete(`/doentes_confirmados/${id}`, {
+      const res = await api.delete(`/doentes_confirmados/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
       })
       setLista(prev => prev.filter(item => item.doente_confirmado_id !== id))
       if (editando?.doente_confirmado_id === id) setEditando(null)
-
-      setFeedbackMsg({
-        type: "success",
-        text: data?.message ?? "Registro deletado com sucesso.",
-      })
+      toast.success(res.data?.message ?? "Registro deletado com sucesso.")
     } catch (e: any) {
       console.error(e)
-      const status = e?.response?.status
-      const msg: Record<number, string> = {
-        401: "Não autenticado.",
-        403: "Apenas supervisores podem deletar registros.",
-        404: "Registro não encontrado.",
-      }
-      setFeedbackMsg({
-        type: "error",
-        text: msg[status] || "Erro ao deletar registro.",
-      })
+      toast.error("Erro ao deletar registro.")
     } finally {
       setDeletandoId(null)
       setConfirmDeleteId(null)
-      setTimeout(() => setFeedbackMsg(null), 3000)
     }
   }
 
@@ -463,94 +441,97 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
     onOpenChange(false)
   }
 
-
-const listaFiltrada = lista.filter(item =>
-  (cicloSelecionado ? item.ciclo === cicloSelecionado : true) &&
-  (anoSelecionado ? item.ano === anoSelecionado : true)
-)
+  const listaFiltrada = lista.filter(item =>
+    (cicloSelecionado ? item.ciclo === cicloSelecionado : true) &&
+    (anoSelecionado ? item.ano === anoSelecionado : true)
+  )
 
   return (
-  <>
-    {/* 🔹 Modal de confirmação de exclusão */}
-    {confirmDeleteId !== null && (
-      <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center">
-        <div className="bg-white rounded-lg shadow-lg p-6 w-[90%] max-w-sm animate-in fade-in duration-150">
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">Excluir registro?</h2>
-          <p className="text-sm text-gray-600 mb-4">
-            Essa ação é permanente e removerá o registro selecionado.
-          </p>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => setConfirmDeleteId(null)}>
-              Cancelar
-            </Button>
-            <Button
-              size="sm"
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={() => deletarRegistro(confirmDeleteId!)}
-              disabled={deletandoId === confirmDeleteId}
-            >
-              {deletandoId === confirmDeleteId ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-1 animate-spin" /> Excluindo...
-                </>
-              ) : (
-                "Excluir"
-              )}
-            </Button>
+    <>
+      {/* 🔹 Modal de confirmação de exclusão */}
+      {confirmDeleteId !== null && (
+        <div className="fixed inset-0 z-[10000] bg-black/40 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-lg p-6 w-[90%] max-w-sm">
+            <h2 className="text-lg font-semibold text-blue-dark mb-2">
+              Excluir registro?
+            </h2>
+            <p className="text-sm text-blue-dark/80 mb-4">
+              Essa ação é permanente e removerá o registro selecionado.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConfirmDeleteId(null)}
+                className="border-none bg-secondary text-blue-dark hover:bg-secondary/80"
+              >
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                className="bg-red-600 hover:bg-red-700 text-white"
+                onClick={() => deletarRegistro(confirmDeleteId!)}
+                disabled={deletandoId === confirmDeleteId}
+              >
+                {deletandoId === confirmDeleteId ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-1 animate-spin" /> Excluindo...
+                  </>
+                ) : (
+                  "Excluir"
+                )}
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
 
-    {/* 🔹 Toast */}
-    {feedbackMsg && (
-      <div
-        className={`fixed bottom-5 right-5 px-4 py-2 rounded-md shadow-md text-sm text-white z-[10000] ${
-          feedbackMsg.type === "success" ? "bg-green-600" : "bg-red-600"
-        }`}
-      >
-        {feedbackMsg.text}
-      </div>
-    )}
+
+
       <Dialog open={open && confirmDeleteId === null} onOpenChange={fechar}>
-        <DialogContent className=" w-full max-h-[90vh] bg-white overflow-y-auto p-0 flex flex-col">
-          <DialogHeader className="px-6 pt-4 pb-2 border-b bg-white">
-            <DialogTitle>Doenças confirmadas</DialogTitle>
-            <DialogDescription>
+        <DialogContent className=" w-full md:min-w-[60vw] max-h-[90vh] bg-white border-none overflow-y-auto p-0 flex flex-col rounded-2xl shadow-lg">
+          <DialogHeader className="px-6 pt-4 pb-2 border-b border-blue-dark/10 bg-white">
+            <DialogTitle className="text-lg font-semibold text-blue-dark">
+              Doenças confirmadas
+            </DialogTitle>
+            <DialogDescription className="text-sm text-blue-dark">
               Visualize e gerencie os registros de doenças confirmadas.
             </DialogDescription>
           </DialogHeader>
 
-          <Card className=" px-3 py-4 space-y-6 bg-white border-none">
+          <Card className="px-4 py-4 space-y-6 bg-white border-none text-blue-dark">
             {/* 1) REGISTROS EXISTENTES */}
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold text-gray-800">Registros existentes</h2>
+              <h2 className="text-sm font-semibold text-blue-dark">
+                Registros existentes
+              </h2>
 
               {erro && <p className="text-sm text-red-600">{erro}</p>}
 
               {loadingLista ? (
-                <p className="text-sm text-gray-500">Carregando registros...</p>
+                <p className="text-sm text-blue-dark/70">Carregando registros...</p>
               ) : listaFiltrada.length === 0 ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-blue-dark/70">
                   Nenhum registro de doença confirmada encontrado.
                 </p>
               ) : (
-                <div className="border rounded-md overflow-hidden bg-white">
-                  <div className="grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-2 px-3 py-2 bg-gray-50 text-sm font-semibold text-gray-700">
+                <div className="border border-blue-dark/10 rounded-xl overflow-hidden bg-white">
+                  <div className="grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-2 px-3 py-2 bg-secondary text-sm font-semibold text-blue-dark">
                     <span>Tipo</span>
                     <span>Nome</span>
                     <span>Endereço</span>
                     <span>Ações</span>
                   </div>
 
-                  <div>
-                   {listaFiltrada.map(item => (
+                  {/* 🔹 Scroll interno apenas na tabela, até ~4 linhas */}
+                  <div className="max-h-[220px] overflow-y-auto">
+                    {listaFiltrada.map(item => (
                       <div key={item.doente_confirmado_id}>
                         {/* Linha normal */}
                         <div
-                          className={`grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-3 px-3 py-2 text-xs border-t items-center ${
+                          className={`grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-3 px-3 py-2 text-xs border-t border-blue-dark/10 items-center ${
                             editando?.doente_confirmado_id === item.doente_confirmado_id
-                              ? "bg-gray-50"
+                              ? "bg-secondary"
                               : "bg-white"
                           }`}
                         >
@@ -565,7 +546,7 @@ const listaFiltrada = lista.filter(item =>
                             <Button
                               variant="outline"
                               size="icon"
-                              className="h-7 w-7"
+                              className="h-7 w-7 border-blue-dark/20 text-blue-dark hover:bg-secondary"
                               onClick={() => iniciarEdicao(item)}
                             >
                               <Edit2 className="w-3 h-3" />
@@ -585,9 +566,9 @@ const listaFiltrada = lista.filter(item =>
 
                         {/* Linha de edição */}
                         {editando?.doente_confirmado_id === item.doente_confirmado_id && (
-                          <div className="border border-blue p-3 bg-gray-50 space-y-3">
+                          <div className="border border-blue-dark/30 border-t-0 px-3 pb-3 pt-2 bg-secondary space-y-3">
                             <div className="flex items-center justify-between">
-                              <h3 className="text-xs font-semibold text-gray-800">
+                              <h3 className="text-xs font-semibold text-blue-dark">
                                 Editar registro #{editando.doente_confirmado_id}
                               </h3>
                               <Button
@@ -595,50 +576,59 @@ const listaFiltrada = lista.filter(item =>
                                 size="icon"
                                 onClick={() => setEditando(null)}
                               >
-                                <X className="w-4 h-4" />
+                                <X className="w-4 h-4 text-blue-dark" />
                               </Button>
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
-                                <Label className="text-xs">Nome (opcional)</Label>
+                                <Label className="text-xs text-blue-dark">
+                                  Nome (opcional)
+                                </Label>
                                 <Input
                                   value={editando.nome ?? ""}
                                   onChange={e => handleEditarCampo("nome", e.target.value)}
+                                  className="mt-1 bg-secondary border-blue-dark/20 text-blue-dark"
                                 />
                               </div>
 
                               <div>
-                                <Label className="text-xs">Tipo da doença *</Label>
+                                <Label className="text-xs text-blue-dark">
+                                  Tipo da doença *
+                                </Label>
                                 <Input
                                   value={editando.tipo_da_doenca}
                                   onChange={e =>
                                     handleEditarCampo("tipo_da_doenca", e.target.value)
                                   }
+                                  className="mt-1 bg-secondary border-blue-dark/20 text-blue-dark"
                                 />
                               </div>
 
                               <div>
-                                <Label className="text-xs">Rua *</Label>
+                                <Label className="text-xs text-blue-dark">Rua *</Label>
                                 <Input
                                   value={editando.rua}
                                   onChange={e => handleEditarCampo("rua", e.target.value)}
+                                  className="mt-1 bg-secondary border-blue-dark/20 text-blue-dark"
                                 />
                               </div>
 
                               <div>
-                                <Label className="text-xs">Número</Label>
+                                <Label className="text-xs text-blue-dark">Número</Label>
                                 <Input
                                   value={editando.numero ?? ""}
                                   onChange={e => handleEditarCampo("numero", e.target.value)}
+                                  className="mt-1 bg-secondary border-blue-dark/20 text-blue-dark"
                                 />
                               </div>
 
                               <div>
-                                <Label className="text-xs">Bairro *</Label>
+                                <Label className="text-xs text-blue-dark">Bairro *</Label>
                                 <Input
                                   value={editando.bairro}
                                   onChange={e => handleEditarCampo("bairro", e.target.value)}
+                                  className="mt-1 bg-secondary border-blue-dark/20 text-blue-dark"
                                 />
                               </div>
                             </div>
@@ -649,6 +639,7 @@ const listaFiltrada = lista.filter(item =>
                                 size="sm"
                                 type="button"
                                 onClick={() => setEditando(null)}
+                                className="border-none bg-white text-blue-dark hover:bg-secondary/80"
                               >
                                 Cancelar
                               </Button>
@@ -658,6 +649,7 @@ const listaFiltrada = lista.filter(item =>
                                 type="button"
                                 onClick={salvarEdicao}
                                 disabled={salvandoEdicao}
+                                className="bg-emerald-600 text-white hover:bg-emerald-700"
                               >
                                 {salvandoEdicao ? (
                                   <>
@@ -684,61 +676,76 @@ const listaFiltrada = lista.filter(item =>
             {/* 2) NOVOS REGISTROS (ABAIXO) */}
             <section className="space-y-3">
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-gray-800">
+                <h2 className="text-sm font-semibold text-blue-dark">
                   Novo(s) caso(s) confirmado(s)
                 </h2>
-                <Button variant="outline" size="sm" type="button" onClick={adicionarLinha}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  type="button"
+                  onClick={adicionarLinha}
+                  className="border-none bg-secondary text-blue-dark hover:bg-secondary/80"
+                >
                   <Plus className="w-4 h-4 mr-1" />
                   Adicionar linha
                 </Button>
               </div>
 
-              <div className="space-y-4 ">
+              <div className="space-y-4">
                 {novas.map((linha, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end border rounded-md px-3 py-3 bg-white"
+                    className="grid grid-cols-1 md:grid-cols-2 gap-3 items-end border border-blue-dark/10 rounded-md px-3 py-3 bg-white"
                   >
                     <div>
-                      <Label className="text-xs">Nome (opcional)</Label>
+                      <Label className="text-xs text-blue-dark">
+                        Nome (opcional)
+                      </Label>
                       <Input
                         value={linha.nome}
                         onChange={e => handleNovaChange(idx, "nome", e.target.value)}
                         placeholder="Nome do paciente"
+                        className="mt-1 bg-secondary border-none text-blue-dark"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Tipo da doença *</Label>
+                      <Label className="text-xs text-blue-dark">
+                        Tipo da doença *
+                      </Label>
                       <Input
                         value={linha.tipo_da_doenca}
                         onChange={e =>
                           handleNovaChange(idx, "tipo_da_doenca", e.target.value)
                         }
                         placeholder="Ex: Dengue, Chikungunya..."
+                        className="mt-1 bg-secondary border-none text-blue-dark"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Rua *</Label>
+                      <Label className="text-xs text-blue-dark">Rua *</Label>
                       <Input
                         value={linha.rua}
                         onChange={e => handleNovaChange(idx, "rua", e.target.value)}
                         placeholder="Rua / Avenida"
+                        className="mt-1 bg-secondary border-none text-blue-dark"
                       />
                     </div>
                     <div>
-                      <Label className="text-xs">Número</Label>
+                      <Label className="text-xs text-blue-dark">Número</Label>
                       <Input
                         value={linha.numero}
                         onChange={e => handleNovaChange(idx, "numero", e.target.value)}
                         placeholder="Número"
+                        className="mt-1 bg-secondary border-none text-blue-dark"
                       />
                     </div>
                     <div className="flex-1">
-                      <Label className="text-xs">Bairro *</Label>
+                      <Label className="text-xs text-blue-dark">Bairro *</Label>
                       <Input
                         value={linha.bairro}
                         onChange={e => handleNovaChange(idx, "bairro", e.target.value)}
                         placeholder="Bairro"
+                        className="mt-1 bg-secondary border-none text-blue-dark"
                       />
                     </div>
                     <div className="flex justify-end items-end self-end">
@@ -757,7 +764,12 @@ const listaFiltrada = lista.filter(item =>
               </div>
 
               <div className="flex justify-end">
-                <Button type="button" onClick={handleSalvarBatch} disabled={salvandoBatch}>
+                <Button
+                  type="button"
+                  onClick={handleSalvarBatch}
+                  disabled={salvandoBatch}
+                  className="bg-emerald-600 text-white hover:bg-emerald-700"
+                >
                   {salvandoBatch ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-1 animate-spin" /> Salvando...

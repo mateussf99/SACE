@@ -88,14 +88,21 @@ const fieldLabels: Record<string, string> = {
   arquivos: "Arquivos",
 }
 const STATUS_LABEL: Record<string, string> = {
- concluída: "Concluída",  pendente: " Pendente", "em análise": "Em análise",
+  "Concluída": "Concluída",
+  "Pendente": "Pendente",
+  "Em Análise": "Em análise", 
 }
 const statusColors: Record<string, string> = {
-  concluída: "bg-green-100 text-green-700 border border-green-700",
-  pendente: "bg-red-100 text-red-700 border red-yellow-700",
-  "em análise": "bg-yellow-100 text-yellow-700 border border-yellow-700",
+  "Concluída": "bg-green-100 text-green-700 border border-green-700",
+  "Pendente": "bg-red-100 text-red-700 border border-red-700",
+  "Em Análise": "bg-yellow-100 text-yellow-700 border border-yellow-700",
   default: "bg-gray-100 text-gray-700 border border-gray-700",
 }
+
+const statusOptions = Object.entries(STATUS_LABEL).map(([value, label]) => ({
+  value,
+  label,
+}))
 
 const buildEndereco = (rua?: string, numero?: number | string) =>
   `${rua ?? ""}, ${numero ?? ""}`.trim()
@@ -143,7 +150,7 @@ const aplicarFiltros = (
 }
 
 const StatusBadge = ({ value }: { value: string }) => {
-  const colorClass = statusColors[value?.toLowerCase()] ?? statusColors.default
+  const colorClass = statusColors[value] ?? statusColors.default
   return (
     <span className={`px-2 py-1 rounded-md text-xs font-semibold ${colorClass}`}>
       {value}
@@ -325,7 +332,7 @@ const isAgente = role.includes("agente")
               endereco_completo: buildEndereco(d.rua_avenida, d.numero),
               endereco_complemento: d.endereco_complemento,
               agente: agenteNome,
-              status: d.status ?? "Não visitado",
+              status: d.status ?? "Pendente",
               tipo_imovel: d.tipo_imovel,
               observacoes: d.observacoes,
               arquivos: d.arquivos,
@@ -409,7 +416,7 @@ const isAgente = role.includes("agente")
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ getValue }) => <StatusBadge value={getValue() as string} />,
+       cell: ({ getValue }) => <StatusBadge value={getValue() as string} />,
     },
     {
       id: "acoes",
@@ -486,6 +493,7 @@ const isAgente = role.includes("agente")
                   ? buildEndereco(updated.rua_avenida, updated.numero)
                   : row.endereco_completo,
               observacoes: updated.observacoes ?? row.observacoes,
+               arquivos: updated.arquivos ?? row.arquivos,
             }
           : row,
       ),
@@ -568,7 +576,7 @@ const isAgente = role.includes("agente")
         open={isModalOpen}
         editableFields={["agente_responsavel_id", "status"]}
         selectFields={["agente_responsavel_id", "status"]}
-        selectOptions={{status: Object.entries(STATUS_LABEL).map(([value, label]) => ({ value, label })),
+        selectOptions={{ status: statusOptions,
           agente_responsavel_id: agentesOptions.map(a => ({
             label: a.nome,
             value: a.id,

@@ -521,14 +521,7 @@ function Index() {
   const columns = useMemo<ColumnDef<RowData>[]>(() => [
     {
       id: "select",
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllPageRowsSelected()}
-          onChange={table.getToggleAllPageRowsSelectedHandler()}
-          className="h-4 w-4 rounded border-2 border-blue-600"
-        />
-      ),
+      
       cell: ({ row }) => (
         <input
           type="checkbox"
