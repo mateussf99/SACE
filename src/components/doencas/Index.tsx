@@ -418,15 +418,14 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const deletarRegistro = async (id: number) => {
     setDeletandoId(id)
     try {
-      const { data } = await api.delete(`/doentes_confirmados/${id}`, {
+      const res = await api.delete(`/doentes_confirmados/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
       })
       setLista(prev => prev.filter(item => item.doente_confirmado_id !== id))
       if (editando?.doente_confirmado_id === id) setEditando(null)
-
-      toast.success("Registro deletado com sucesso.") 
+      toast.success(res.data?.message ?? "Registro deletado com sucesso.")
     } catch (e: any) {
       console.error(e)
       toast.error("Erro ao deletar registro.")
