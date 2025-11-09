@@ -418,14 +418,18 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
   const deletarRegistro = async (id: number) => {
     setDeletandoId(id)
     try {
-      const res = await api.delete(`/doentes_confirmados/${id}`, {
+      const { data } = await api.delete(`/doencas_confirmadas/${id}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}`,
         },
       })
-      setLista(prev => prev.filter(item => item.doente_confirmado_id !== id))
-      if (editando?.doente_confirmado_id === id) setEditando(null)
-      toast.success(res.data?.message ?? "Registro deletado com sucesso.")
+      setLista(prev => prev.filter(item => item.doenca_confirmada_id !== id))
+      if (editando?.doenca_confirmada_id === id) setEditando(null)
+
+      setFeedbackMsg({
+        type: "success",
+        text: data?.message ?? "Registro deletado com sucesso.",
+      })
     } catch (e: any) {
       console.error(e)
       toast.error("Erro ao deletar registro.")
@@ -523,15 +527,14 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
                     <span>Ações</span>
                   </div>
 
-                  {/* 🔹 Scroll interno apenas na tabela, até ~4 linhas */}
-                  <div className="max-h-[220px] overflow-y-auto">
-                    {listaFiltrada.map(item => (
-                      <div key={item.doente_confirmado_id}>
+                  <div>
+                   {listaFiltrada.map(item => (
+                      <div key={item.doenca_confirmada_id}>
                         {/* Linha normal */}
                         <div
-                          className={`grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-3 px-3 py-2 text-xs border-t border-blue-dark/10 items-center ${
-                            editando?.doente_confirmado_id === item.doente_confirmado_id
-                              ? "bg-secondary"
+                          className={`grid grid-cols-[1fr_1fr_2fr_0.8fr] gap-3 px-3 py-2 text-xs border-t items-center ${
+                            editando?.doenca_confirmada_id === item.doenca_confirmada_id
+                              ? "bg-gray-50"
                               : "bg-white"
                           }`}
                         >
@@ -565,11 +568,11 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
                         </div>
 
                         {/* Linha de edição */}
-                        {editando?.doente_confirmado_id === item.doente_confirmado_id && (
-                          <div className="border border-blue-dark/30 border-t-0 px-3 pb-3 pt-2 bg-secondary space-y-3">
+                        {editando?.doenca_confirmada_id === item.doenca_confirmada_id && (
+                          <div className="border border-blue p-3 bg-gray-50 space-y-3">
                             <div className="flex items-center justify-between">
-                              <h3 className="text-xs font-semibold text-blue-dark">
-                                Editar registro #{editando.doente_confirmado_id}
+                              <h3 className="text-xs font-semibold text-gray-800">
+                                Editar registro #{editando.doenca_confirmada_id}
                               </h3>
                               <Button
                                 variant="ghost"
