@@ -67,15 +67,6 @@ function Index() {
           </div>
         )}
       </div>
-
-      {/* <div className="hidden md:block" >
-        <h1 className="text-blue-dark text-2xl font-semibold mb-4">
-          Estatísticas
-        </h1>
-        <div>
-
-        </div>
-      </div> */}
     </div>
   )
 }

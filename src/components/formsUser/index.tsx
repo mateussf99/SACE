@@ -289,7 +289,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
           variant="default"
           className="h-20 bg-gradient-to-r from-orange to-orange-dark hover:from-orange-dark hover:to-orange text-white text-xl border-none"
         >
-          <ClipboardList className="mr-1 !h-6 !w-6 shrink-0" />
+          <ClipboardList className="!h-6 !w-6 shrink-0" />
           Cadastrar novo usuário
         </Button>
       </DialogTrigger>
