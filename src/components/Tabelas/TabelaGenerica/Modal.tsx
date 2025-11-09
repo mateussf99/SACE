@@ -70,18 +70,18 @@ const flattenDeposito = <T extends Record<string, any>>(obj: T | null): T | null
   return out
 }
 
-const isFormData = (x: any): x is FormData =>
-  typeof FormData !== "undefined" && x instanceof FormData
+// const isFormData = (x: any): x is FormData =>
+//   typeof FormData !== "undefined" && x instanceof FormData
 
-const dumpFormData = (fd: FormData) => {
-  const rows: Array<{ key: string; value: string }> = []
-  for (const [k, v] of fd.entries())
-    rows.push(
-      v instanceof File
-        ? { key: k, value: `[File] name=${v.name} size=${v.size} type=${v.type}` }
-        : { key: k, value: String(v) }
-    )
-}
+// const dumpFormData = (fd: FormData) => {
+//   const rows: Array<{ key: string; value: string }> = []
+//   for (const [k, v] of fd.entries())
+//     rows.push(
+//       v instanceof File
+//         ? { key: k, value: `[File] name=${v.name} size=${v.size} type=${v.type}` }
+//         : { key: k, value: String(v) }
+//     )
+// }
 
 
 
