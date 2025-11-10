@@ -36,11 +36,12 @@ function Index() {
   type TabId = (typeof tabs)[number]["id"]
 
   const [activeTab, setActiveTab] = useState<TabId>("areas")
+  const [areasRefreshKey, setAreasRefreshKey] = useState(0)
 
   return (
     <div className="bg-secondary min-h-screen flex flex-col gap-4 pt-2">
       <div className="w-full grid gap-4 p-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        <FormsAreas />
+        <FormsAreas onFinish={() => setAreasRefreshKey(k => k + 1)} />
         <FormsUser />
         <FormsDenuncia />
         <FormsArtigos />
@@ -89,7 +90,7 @@ function Index() {
       <div className="w-full flex flex-col p-2 space-y-4">
         {activeTab === "areas" && (
           <div className="rounded-lg bg-white p-2 sm:p-4">
-            <TabelaAreaDeVisitas />
+            <TabelaAreaDeVisitas refreshKey={areasRefreshKey} />
           </div>
         )}
 

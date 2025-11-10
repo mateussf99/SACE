@@ -74,7 +74,7 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
         .catch(() => {})
 
     }
-  }, [cep]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [cep])
 
   function validarCampos(): string | null {
     if (!onlyDigits(cep)) return "Informe um CEP válido."
@@ -117,7 +117,6 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
       return
     }
 
-    // Monta o payload conforme a API /area_de_visita
     const payload = enderecos.map((e) => ({
       cep: e.cep,
       setor: e.setorId,
@@ -125,7 +124,6 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
       estado: e.uf,
       municipio: e.municipio,
       bairro: e.bairro,
-      // Atenção: API espera "logadouro" (com 'o'), seguindo o exemplo fornecido
       logadouro: e.logradouro,
     }))
 
