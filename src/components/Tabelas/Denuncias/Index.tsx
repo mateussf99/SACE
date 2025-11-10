@@ -69,10 +69,9 @@ export type RowData = {
 }
 
 export type DenunciasTabelaProps = {
-
   initialData?: Denuncia[]
-
   disableOwnFetch?: boolean
+  refreshKey?: number                 // <- NOVO
 }
 
 
@@ -279,6 +278,7 @@ const AcoesCell = ({
 export default function Index({
   initialData,
   disableOwnFetch = false,
+  refreshKey = 0,                     // <- NOVO
 }: DenunciasTabelaProps) {
   const [data, setData] = useState<RowData[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
@@ -434,6 +434,7 @@ const isAgente = role.includes("agente")
     globalFilter,
     initialData,
     disableOwnFetch,
+    refreshKey,                        // <- refetch ao mudar
   ])
 
   const handleEditRow = (id: number | null) => {
