@@ -51,6 +51,7 @@ type AreasTabelaProps = {
   initialDataRaw?: BackendRow[]
   /** se true, NÃO faz GET /area_de_visita – usa apenas initialDataRaw (ou fica vazia) */
   disableOwnFetch?: boolean
+  refreshKey?: number                // <- adicionada prop
 }
 
 /* ===== Helpers gerais ===== */
@@ -127,6 +128,7 @@ const deletarAreas = async (ids: number[]) => {
 export default function Index({
   initialDataRaw,
   disableOwnFetch = false,
+  refreshKey = 0,                    // <- default
 }: AreasTabelaProps) {
   const [data, setData] = useState<RowData[]>([])
   const [globalFilter, setGlobalFilter] = useState("")
@@ -259,6 +261,7 @@ export default function Index({
     agenteId,
     initialDataRaw,
     disableOwnFetch,
+    refreshKey,                      // <- dispara refetch ao mudar
   ])
 
 
