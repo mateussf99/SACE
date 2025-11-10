@@ -51,8 +51,8 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
     }
 
     const payload = {
-      title: title.trim(),
-      message: message.trim(),
+      titulo: title.trim(),
+      descricao: message.trim(),
       url: url.trim() || undefined,
     }
 
@@ -61,7 +61,10 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
       await api.post("/nudges", payload)
       toast.success("Nudge criado com sucesso!")
 
-      if (onFinish) await onFinish(payload)
+      if (onFinish) {
+        // mantém assinatura antiga caso queira reaproveitar
+        await onFinish({ title, message, url: url.trim() || undefined })
+      }
 
       resetForm()
       setOpen(false)
