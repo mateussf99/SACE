@@ -28,6 +28,7 @@ import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 
 export interface Agente {
   usuario_id?: number
+  agente_id?: number
   nome_completo?: string
   email?: string
   registro_do_servidor?: string
@@ -44,6 +45,7 @@ export interface Agente {
 }
 
 export type RowData = {
+    agente_id?: number
   nome?: string
   contato?: string
   zonasResponsavel?: string[]
@@ -215,6 +217,7 @@ function Index() {
     setConfirm({ open: true, desc, action })
 
   const sanitize = (r: Agente): RowData => ({
+      agente_id: r.agente_id,
     usuario_id: r.usuario_id,
     nome: r.nome_completo?.trim() || "Não informado",
     email: r.email || "Não informado",
@@ -235,11 +238,11 @@ function Index() {
   })
 
   const handleAgenteSaved = (updated: Agente) => {
-    if (!updated?.usuario_id) return
+    if (!updated?.agente_id) return
 
     setData(prev =>
       prev.map(row =>
-        row.usuario_id === updated.usuario_id
+        row.usuario_id === updated.agente_id
           ? sanitize(updated)
           : row
       )
@@ -475,7 +478,7 @@ function Index() {
     const toggle = () => setOpen(p => !p)
     const handleView = () => {
       toggle()
-      setSelectedId(row.original.usuario_id ?? null)
+      setSelectedId(row.original.agente_id  ?? null)
       setIsModalOpen(true)
     }
 
@@ -496,8 +499,8 @@ function Index() {
                 confirmDelete(
                   async () => {
                     try {
-                      await deletarAreas([row.original.usuario_id!])
-                      setData(p => p.filter(d => d.usuario_id !== row.original.usuario_id))
+                      await deletarAreas([row.original.agente_id!])
+                      setData(p => p.filter(d => d.agente_id !== row.original.agente_id))
                       toggle()
                     } catch (e) {
                       console.error(e)
@@ -539,7 +542,7 @@ function Index() {
         <span
           className="font-semibold text-blue-800 cursor-pointer hover:underline"
           onClick={() => {
-            setSelectedId(row.original.usuario_id ?? null)
+            setSelectedId(row.original.agente_id  ?? null)
             setIsModalOpen(true)
           }}
         >
@@ -624,7 +627,7 @@ function Index() {
             onClick={() => {
               const ids = table
                 .getSelectedRowModel()
-                .rows.map(r => r.original.usuario_id!)
+                .rows.map(r =>r.original.agente_id!)
                 .filter(Boolean)
 
               if (!ids.length) return alert("Selecione ao menos uma área.")
@@ -633,7 +636,7 @@ function Index() {
                 async () => {
                   try {
                     await deletarAreas(ids)
-                    setData(p => p.filter(d => !ids.includes(d.usuario_id!)))
+                    setData(p => p.filter(d => !ids.includes(d.agente_id!)))
                     table.toggleAllPageRowsSelected(false)
                   } catch (e) {
                     console.error(e)
