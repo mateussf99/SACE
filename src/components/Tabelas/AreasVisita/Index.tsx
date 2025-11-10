@@ -17,6 +17,7 @@ import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGene
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 import { api } from "@/services/api"
+import { toast } from "react-toastify"
 import {
   Dialog,
   DialogContent,
@@ -120,7 +121,7 @@ const deletarAreas = async (ids: number[]) => {
       403: "Acesso proibido. Apenas supervisores podem deletar.",
       404: "Uma ou mais áreas de visita não foram encontradas.",
     }
-    alert(msg[e.response?.status] || "Erro interno do servidor.")
+    toast.error(msg[e?.response?.status] || "Erro interno do servidor.")
     throw e
   }
 }
@@ -309,7 +310,9 @@ export default function Index({
                         const resp = await deletarAreas([
                           row.original.area_de_visita_id as number,
                         ])
-                        alert(resp.message)
+                          toast.success(
+              resp?.message || "Área de visita excluída com sucesso."
+            )
                         setData(p =>
                           p.filter(
                             d =>
@@ -469,19 +472,24 @@ export default function Index({
                 .getSelectedRowModel()
                 .rows.map(r => r.original.area_de_visita_id!)
                 .filter(Boolean)
-              if (!ids.length) return alert("Selecione ao menos uma área.")
+          if (!ids.length) {
+
+      return
+    }
               confirmDelete(
                 async () => {
                   try {
                     const resp = await deletarAreas(ids)
-                    alert(resp.message)
+                      toast.success(
+            resp?.message || "Áreas de visita excluídas com sucesso."
+          )
                     setData(p => p.filter(d => !ids.includes(d.area_de_visita_id!)))
                     table.toggleAllPageRowsSelected(false)
                   } catch (e) {
                     console.error(e)
                   }
                 },
-                `Deseja realmente excluir as ${ids.length} áreas selecionadas?`,
+                `Deseja realmente excluir as áreas selecionadas?`,
               )
             }}
           >
@@ -505,25 +513,24 @@ export default function Index({
     return found ? found.label : id
   }
 
-  const renderField = (f: keyof BackendRow, v: any) => {
-    if (f === "agentes") {
-      const ids = Array.isArray(v) ? v : [v].filter(Boolean)
-      const nomes = ids.map((id: number) => getAgenteLabel(id))
-      return (
-        <div>
-          <strong>{fieldLabels[f]}:</strong>{" "}
-          {nomes.length ? nomes.join(", ") : "Não informado"}
-        </div>
-      )
-    }
-
+ const renderField = (f: keyof BackendRow, v: any) => {
+  if (f === "agentes") {
+    const ids = Array.isArray(v) ? v : [v].filter(Boolean)
+    const nomes = ids.map((id: number) => getAgenteLabel(id))
     return (
-      <div className="flex flex-col">
-        <strong>{fieldLabels[f] ?? f}:</strong>{" "}
-        {v == null ? "Não informado" : Array.isArray(v) ? v.join(", ") : String(v)}
-      </div>
+      <span>
+        {nomes.length ? nomes.join(", ") : "Não informado"}
+      </span>
     )
   }
+
+  return (
+    <span>
+      {v == null ? "Não informado" : Array.isArray(v) ? v.join(", ") : String(v)}
+    </span>
+  )
+}
+
 
   const handleSubmitCustom = (payload: any) => {
     if (payload.agentes) {
