@@ -22,10 +22,10 @@ type ZonaCalorProps = {
 }
 
 const colorMap: Record<ZonaCor, { rgb: string; ring: string; label: string; icon: React.ReactNode }> = {
-  vermelha: { rgb: '239,68,68', ring: '#b91c1c', label: 'Zona vermelha (Perigo)', icon: <TriangleAlert className="h-5 w-5 text-red-600" /> },
-  laranja: { rgb: '245,158,11', ring: '#d97706', label: 'Zona laranja (Alerta)', icon: <TriangleAlert className="h-5 w-5 text-amber-600" /> },
-  amarela: { rgb: '234,179,8', ring: '#ca8a04', label: 'Zona amarela (Atenção)', icon: <TriangleAlert className="h-5 w-5 text-yellow-600" /> },
-  preta:   { rgb: '17,24,39', ring: '#111827', label: 'Zona preta (Emergência)', icon: <TriangleAlert className="h-5 w-5 text-gray-900" /> },
+  vermelha: { rgb: '239,68,68', ring: '#b91c1c', label: 'Zona vermelha (Perigo)', icon: <TriangleAlert className="h-4 w-4 md:h-5 md:w-5 text-red-600" /> },
+  laranja: { rgb: '245,158,11', ring: '#d97706', label: 'Zona laranja (Alerta)', icon: <TriangleAlert className="h-4 w-4 md:h-5 md:w-5 text-amber-600" /> },
+  amarela: { rgb: '234,179,8', ring: '#ca8a04', label: 'Zona amarela (Atenção)', icon: <TriangleAlert className="h-4 w-4 md:h-5 md:w-5 text-yellow-600" /> },
+  preta:   { rgb: '17,24,39', ring: '#111827', label: 'Zona preta (Emergência)', icon: <TriangleAlert className="h-4 w-4 md:h-5 md:w-5 text-gray-900" /> },
 }
 
 function ZonaCalor({
@@ -85,19 +85,15 @@ function ZonaCalor({
     const onPanelLayout: EventListener = () => updatePosition()
     window.addEventListener('map-panel-layout', onPanelLayout)
 
-   
-
     return () => {
       window.removeEventListener('resize', onResizeOrScroll)
       window.removeEventListener('scroll', onResizeOrScroll, true)
       anchor?.removeEventListener('transitionend', onTransitionEnd)
       window.removeEventListener('map-panel-layout', onPanelLayout)
-      
     }
   }, [open])
 
-  // Três círculos concêntricos para simular o gradiente (como o DivIcon fazia),
-  // agora em metros para escalar “no mundo”, não na tela.
+  // Três círculos concêntricos para simular o gradiente
   const r1 = radiusMeters * 0.35
   const r2 = radiusMeters * 0.6
   const r3 = radiusMeters * 0.75
@@ -142,7 +138,7 @@ function ZonaCalor({
             radius={r2}
             pathOptions={{
               color: ring,
-              weight: 4,
+              weight: 3, // reduzido levemente
               dashArray: '8 8',
               fillOpacity: 0,
             }}
@@ -153,56 +149,55 @@ function ZonaCalor({
       {open && createPortal(
         <>
           <div className="pointer-events-none fixed inset-0 z-[1900] bg-transparent" />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={headingId}
-            className="fixed border-none rounded-2xl z-[2000] bg-white p-6 shadow-lg outline-none transition-all duration-200"
-            style={{ top: panelPos.top, left: panelPos.left, width: panelPos.width, maxWidth: '92vw' }}
-          >
-            <button
-              aria-label="Fechar"
-              onClick={() => setOpen(false)}
-              className="absolute right-4 top-4 rounded-sm opacity-70 transition hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={headingId}
+              className="fixed border-none rounded-2xl z-[2000] bg-white p-4 md:p-6 shadow-lg outline-none transition-all duration-200"
+              style={{ top: panelPos.top, left: panelPos.left, width: panelPos.width, maxWidth: '90vw' }}
             >
-              <X className="h-4 w-4" />
-            </button>
+              <button
+                aria-label="Fechar"
+                onClick={() => setOpen(false)}
+                className="absolute right-4 top-4 rounded-sm opacity-70 transition hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              </button>
 
-            <div className="space-y-1 border-l-4 p-2" style={{ borderLeftColor: ring }}>
-              <h2 id={headingId} className="flex items-center gap-2 text-lg font-semibold">
-                {icon}
-                {titulo ?? label}
-              </h2>
-              <p className="text-sm text-muted-foreground">{computedDescricao}</p>
-            </div>
+              <div className="space-y-1 border-l-4 p-1.5 md:p-2" style={{ borderLeftColor: ring }}>
+                <h2 id={headingId} className="flex items-center gap-2 text-base md:text-lg font-semibold">
+                  {icon}
+                  {titulo ?? label}
+                </h2>
+                <p className="text-xs md:text-sm text-muted-foreground">{computedDescricao}</p>
+              </div>
 
-            <div className="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <div className='flex gap-2 grid-cols-1 sm:grid-cols-2 sm:col-span-3'>
-                <div className="flex-col p-3 ">
-                  <p className="text-xs text-muted-foreground">Casos confirmados</p>
-                  <p className="font-semibold">{casosConfirmados}</p>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
+                <div className='flex gap-2 grid-cols-1 md:grid-cols-2 md:col-span-3'>
+                  <div className="flex-col p-2 md:p-2 ">
+                    <p className="text-xs text-muted-foreground">Casos confirmados</p>
+                    <p className="font-semibold text-sm md:text-base">{casosConfirmados}</p>
+                  </div>
+                  <div className="flex-col p-2 md:p-2 md:col-span-2">
+                    <p className="text-xs text-muted-foreground">Focos encontrados</p>
+                    <p className="font-semibold text-sm md:text-base">{focosEncontrados}</p>
+                  </div>
                 </div>
-                <div className="flex-col p-3  sm:col-span-2">
-                  <p className="text-xs text-muted-foreground">Focos encontrados</p>
-                  <p className="font-semibold">{focosEncontrados}</p>
+                <div className='flex gap-2 grid-cols-1 md:grid-cols-3 md:col-span-3'>
+                  <div className="flex-col p-2 md:p-3 ">
+                    <p className="text-xs text-muted-foreground">Casos de Dengue</p>
+                    <p className="font-semibold text-sm md:text-base">{casosDengue ?? 0}</p>
+                  </div>
+                  <div className="flex-col p-2 md:p-3 ">
+                    <p className="text-xs text-muted-foreground">Casos de Zika</p>
+                    <p className="font-semibold text-sm md:text-base">{casosZika ?? 0}</p>
+                  </div>
+                  <div className="flex-col p-2 md:p-3 ">
+                    <p className="text-xs text-muted-foreground">Casos de Chikungunya</p>
+                    <p className="font-semibold text-sm md:text-base">{casosChikungunya ?? 0}</p>
+                  </div>
                 </div>
               </div>
-              <div className='flex gap-2 grid-cols-1 sm:grid-cols-3 sm:col-span-3'>
-                <div className="flex-col p-3 ">
-                  <p className="text-xs text-muted-foreground">Casos de Dengue</p>
-                  <p className="font-semibold">{casosDengue ?? 0}</p>
-                </div>
-                <div className="flex-col p-3 ">
-                  <p className="text-xs text-muted-foreground">Casos de Zika</p>
-                  <p className="font-semibold">{casosZika ?? 0}</p>
-                </div>
-                <div className="flex-col p-3 ">
-                  <p className="text-xs text-muted-foreground">Casos de Chikungunya</p>
-                  <p className="font-semibold">{casosChikungunya ?? 0}</p>
-                </div>
-              </div>
-              
-            </div>
           </div>
         </>,
         document.body

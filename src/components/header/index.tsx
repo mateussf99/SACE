@@ -12,8 +12,8 @@ function Index() {
 
   return (
     <div className="sticky top-0 z-40 bg-white shadow">
-      <div className="flex items-center justify-between px-3 sm:px-4 h-14 md:h-16 gap-2">
-        <Link to="/" className="flex-col justify-items-center select-none">
+      <div className="flex items-center justify-between sm:px-4 h-14 md:h-16 gap-2">
+        <Link to="/" className="flex-col p-1 justify-items-center select-none">
           <h1 className="font-bold text-xl md:text-2xl text-blue leading-none">
             SACE
           </h1>
@@ -24,17 +24,17 @@ function Index() {
 
         
         <nav className="flex flex-1 justify-center">
-          <div className="flex flex-wrap gap-2 sm:gap-4 xl:gap-8 justify-center">
+          <div className="flex sm:gap-4 xl:gap-8 justify-center">
             {navLinks.map((l) => (
               <Link key={l.to} to={l.to}>
                 <Button
-                  className="px-2 py-1 text-xs sm:text-base md:text-lg xl:text-xl min-w-[110px] sm:min-w-[150px] md:min-w-[160px] xl:min-w-[220px]"
+                  className="px-2 py-1 text-xs sm:text-base md:text-lg xl:text-xl min-w-[85px] sm:min-w-[150px] md:min-w-[160px] xl:min-w-[220px]"
                   variant={isActive(l.to) ? "secondary" : "outline"}
                 >
                   {l.to === "/" ? (
                     <>
-                      <span>Mapa</span>
-                      <span className="hidden sm:inline"> interativo</span>
+                      <p>Mapa</p>
+                      
                     </>
                   ) : (
                     l.label
@@ -46,7 +46,7 @@ function Index() {
         </nav>
 
         
-        <div className="flex">
+        <div className="flex pl-2 pr-1 sm:pl-4">
           <Link to="/login">
             <Button
               className="px-3 py-1 text-xs sm:text-base md:text-lg xl:text-xl bg-gradient-to-r from-blue to-blue-dark text-white shadow-md whitespace-nowrap"
