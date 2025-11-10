@@ -21,6 +21,7 @@ import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGene
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
 import { api } from "@/services/api"
+import { toast } from "react-toastify"
 
 
 export type RowData = {
@@ -221,106 +222,116 @@ const SectionLabel = (text: string) => (
 const viewersRegistroCampo = {
   "__label_depositos__": () => SectionLabel("Depósitos encontrados"),
   "__label_atividades__": () => SectionLabel("Atividades realizadas"),
-  area_de_visita: ({ value }: any) => {
-    const setor = value?.setor ?? "Não informado"
-    const logradouro = value?.logadouro ?? "Não informado"
-    return (
-      <div>
-        <strong>Setor / Logradouro:</strong>{" "}
-        <span className="font-semibold">{setor}</span>{" "}
-        <span className="text-gray-500">—</span>{" "}
-        <span className="font-semibold">{logradouro}</span>
-      </div>
-    )
-  },
-  imovel_status: ({ value }: any) => <div><strong>Status:</strong> {STATUS_LABEL[String(value)] ?? String(value ?? "Não informado")}</div>,
-  ...Object.fromEntries((BOOL_ATIVIDADES as readonly string[]).map(k => [
-    k,
-    ({ value }: any) => {
-      const ativo = Boolean(value)
-      const cls = ativo ? "bg-green-100 text-green-800 border border-green-700" : "bg-gray-100 text-gray-700 border border-gray-400"
-      return (
-        <div className="flex items-center gap-2">
-          <strong>{k.toUpperCase()}:</strong>
-          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>{ativo ? "Sim" : "Não"}</span>
-        </div>
-      )
-    },
-  ])),
-  ...Object.fromEntries((DEPOSITOS as readonly string[]).map((k) => [
-    k,
-    ({ value, data }: { value: any; data: any }) => {
-      const v = value ?? data?.deposito?.[k] ?? 0
-      const n = Number.isFinite(Number(v)) ? Number(v) : 0
-      return <div><strong>{k.toUpperCase()}:</strong> <span className="font-semibold">{n}</span></div>
-    },
-  ])),
-  larvicidas: ({ value }: any) => {
-    const arr = Array.isArray(value) ? value : []
-    if (!arr.length) return <div><strong>Larvicidas aplicados:</strong> Nenhum</div>
-    return (
-      <div>
-        <strong>Larvicidas aplicados:</strong>
-        <ul className="list-disc ml-5">
-          {arr.map((v: any, i: number) => (
-            <li key={i}>
-              Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
-              {v.forma ? <> | Forma: <span className="font-semibold">{v.forma}</span></> : null}
-              {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  },
-  adulticidas: ({ value }: any) => {
-    const arr = Array.isArray(value) ? value : []
-    if (!arr.length) return <div><strong>Adulticidas aplicados:</strong> Nenhum</div>
-    return (
-      <div>
-        <strong>Adulticidas aplicados:</strong>
-        <ul className="list-disc ml-5">
-          {arr.map((v: any, i: number) => (
-            <li key={i}>
-              Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
-              {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
-            </li>
-          ))}
-        </ul>
-      </div>
-    )
-  },
- arquivos: ({ value }: any) => {
-    const arr = Array.isArray(value) ? value : []
+area_de_visita: ({ value }: any) => {
+  const setor = value?.setor ?? "Não informado"
+  const logradouro = value?.logadouro ?? "Não informado"
+  return (
+    <div>
+      <span className="font-semibold">{setor}</span>{" "}
+      <span className="text-gray-500">—</span>{" "}
+      <span className="font-semibold">{logradouro}</span>
+    </div>
+  )
+},
 
-    if (!arr.length) {
-      return (
-        <div>
-          <strong>Arquivos do registro:</strong>{" "}
-          <span className="text-sm text-gray-500">Nenhum arquivo enviado</span>
-        </div>
-      )
-    }
+imovel_status: ({ value }: any) => (
+  <div>
+    {STATUS_LABEL[String(value)] ?? String(value ?? "Não informado")}
+  </div>
+),
 
+ ...Object.fromEntries((BOOL_ATIVIDADES as readonly string[]).map(k => [
+  k,
+  ({ value }: any) => {
+    const ativo = Boolean(value)
+    const cls = ativo
+      ? "bg-green-100 text-green-800 border border-green-700"
+      : "bg-gray-100 text-gray-700 border border-gray-400"
     return (
-      <div className="flex flex-col gap-2">
-        <strong>Arquivos do registro:</strong>
-        <div className="flex flex-wrap gap-4 mt-2">
-          {arr.map((a: { arquivo_id: number; arquivo_nome: string }) => (
-            <div
-              key={a.arquivo_id}
-              className="flex flex-col items-start gap-1"
-            >
-              <RegistroCampoArquivoImg
-                arquivoId={a.arquivo_id}
-                nome={a.arquivo_nome}
-              />
-            </div>
-          ))}
-        </div>
+      <div className="flex items-center gap-2">
+        <span className={`px-2 py-0.5 rounded text-xs font-semibold ${cls}`}>
+          {ativo ? "Sim" : "Não"}
+        </span>
       </div>
     )
   },
+])),
+
+ ...Object.fromEntries((DEPOSITOS as readonly string[]).map((k) => [
+  k,
+  ({ value, data }: { value: any; data: any }) => {
+    const v = value ?? data?.deposito?.[k] ?? 0
+    const n = Number.isFinite(Number(v)) ? Number(v) : 0
+    return (
+      <div>
+        <span className="font-semibold">{n}</span>
+      </div>
+    )
+  },
+])),
+
+larvicidas: ({ value }: any) => {
+  const arr = Array.isArray(value) ? value : []
+  if (!arr.length) {
+    return <div className="text-sm text-gray-500">Nenhum</div>
+  }
+  return (
+    <ul className="list-disc ml-5">
+      {arr.map((v: any, i: number) => (
+        <li key={i}>
+          Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
+          {v.forma ? <> | Forma: <span className="font-semibold">{v.forma}</span></> : null}
+          {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
+        </li>
+      ))}
+    </ul>
+  )
+},
+
+adulticidas: ({ value }: any) => {
+  const arr = Array.isArray(value) ? value : []
+  if (!arr.length) {
+    return <div className="text-sm text-gray-500">Nenhum</div>
+  }
+  return (
+    <ul className="list-disc ml-5">
+      {arr.map((v: any, i: number) => (
+        <li key={i}>
+          Tipo: <span className="font-semibold">{v.tipo ?? "Não informado"}</span>
+          {v.quantidade !== undefined ? <> | Quantidade: <span className="font-semibold">{v.quantidade}</span></> : null}
+        </li>
+      ))}
+    </ul>
+  )
+},
+
+
+arquivos: ({ value }: any) => {
+  const arr = Array.isArray(value) ? value : []
+
+  if (!arr.length) {
+    return (
+      <span className="text-sm text-gray-500">Nenhum arquivo enviado</span>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap gap-4 mt-2">
+      {arr.map((a: { arquivo_id: number; arquivo_nome: string }) => (
+        <div
+          key={a.arquivo_id}
+          className="flex flex-col items-start gap-1"
+        >
+          <RegistroCampoArquivoImg
+            arquivoId={a.arquivo_id}
+            nome={a.arquivo_nome}
+          />
+        </div>
+      ))}
+    </div>
+  )
+},
+
 }
 
 const DepositoEditor = (label: string) =>
@@ -344,7 +355,7 @@ function LarvicidasEditor({ value, onChange }: { value: any[]; onChange: (v: any
     const item = arr[i]; const id = item?.larvicida_id ?? item?.id
     if (id != null) {
       try { setDeletingIndex(i); await api.delete(`/larvicida/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` } }); onChange(tag(arr.filter((_, x) => x !== i))) }
-      catch (err) { console.error(err); alert("Falha ao deletar larvicida no servidor.") }
+      catch (err) { console.error(err); toast.error("Falha ao deletar larvicida no servidor.") }
       finally { setDeletingIndex(null) }
       return
     }
@@ -390,7 +401,7 @@ function AdulticidasEditor({ value, onChange }: { value: any[]; onChange: (v: an
     const item = arr[i]; const id = item?.adulticida_id ?? item?.id
     if (id != null) {
       try { setDeletingIndex(i); await api.delete(`/adulticida/${id}`, { headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` } }); onChange(tag(arr.filter((_, x) => x !== i))) }
-      catch (err) { console.error(err); alert("Falha ao deletar adulticida no servidor.") }
+      catch (err) { console.error(err);  toast.error("Falha ao deletar adulticida no servidor.") }
       finally { setDeletingIndex(null) }
       return
     }
@@ -467,7 +478,6 @@ const AcoesCell = ({
             <Edit className="w-4 h-4" />
           </button>
 
-          {/* 🗑️ Excluir: só para agente */}
           {canDelete && (
             <button
               className="p-1 text-red-600 hover:text-red-900"
@@ -480,7 +490,6 @@ const AcoesCell = ({
             </button>
           )}
 
-          {/* ❌ Fechar menu */}
           <button className="p-1 hover:text-gray-600" onClick={toggle}>
             <X className="w-4 h-4" />
           </button>
@@ -699,7 +708,7 @@ export default function RegistroTabela({
   }
 
   const modalCampos: (keyof BackendRow | string)[] = [
-    "registro_de_campo_id", "area_de_visita", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
+    "area_de_visita", "imovel_numero", "imovel_complemento", "imovel_tipo", "imovel_status",
     "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
      "numero_da_amostra", "quantiade_tubitos",
     "__label_depositos__", ...DEPOSITOS, "larvicidas", "adulticidas",

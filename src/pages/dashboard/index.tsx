@@ -16,10 +16,8 @@ function Index() {
   return (
     <div className="bg-secondary min-h-screen flex flex-col gap-4 p-4">
 
-      <div className="grid gap-6 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-lg bg-white shadow p-0">
+      <div className="grid gap-6 grid-cols-1  lg:grid-cols-3">
 
-        </div>
         <div className="rounded-lg bg-white shadow p-0">
           <FocosPositivos />
         </div>

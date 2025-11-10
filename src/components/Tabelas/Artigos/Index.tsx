@@ -17,6 +17,8 @@ import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
+import { toast } from "react-toastify"
+
 import {
   Dialog,
   DialogContent,
@@ -70,7 +72,10 @@ const formatArtigoToRow = (a: Artigo): RowData => ({
   titulo: a.titulo ?? "Não informado",
   descricao: a.descricao ?? "Não informado",
   supervisor: a.supervisor_nome ?? "Não informado",
-  data: a.data_criacao ? format(new Date(a.data_criacao), "dd/MM/yyyy") : "Não informado",
+  data: a.data_criacao
+  ? format(new Date(a.data_criacao), "dd/MM/yyyy HH:mm")
+  : "Não informado",
+
   link: a.link_artigo ?? "",
   imagem: a.imagem_nome ?? "",
 })
@@ -117,7 +122,7 @@ const deletarArtigo = async (artigo_id?: number) => {
       403: "Acesso proibido. Apenas supervisores podem deletar.",
       404: "Artigo não encontrado.",
     }
-    alert(msg[e.response?.status] || "Erro interno do servidor.")
+    toast.error(msg[e?.response?.status] || "Erro interno do servidor.")
     throw e
   }
 }
@@ -217,7 +222,9 @@ function Index() {
                   async () => {
                     try {
                       const resp = await deletarArtigo(row.original.id!)
-                      if (resp?.message) alert(resp.message)
+                      if (resp?.message) toast.success(
+            resp?.message || "Artigo excluído com sucesso."
+          )
                       setData(p => p.filter(d => d.id !== row.original.id))
                       toggle()
                     } catch (e) {
@@ -363,7 +370,6 @@ function Index() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         campos={[
-          "artigo_id",
           "data_criacao",
           "supervisor_nome",
           "imagem_nome",
@@ -379,28 +385,25 @@ function Index() {
         onBeforeSubmit={buildArtigoPayload}
         onSaved={handleArtigoSaved}
         renderField={(field, value) => {
-          const label = fieldLabels?.[field] ?? field
-          if (field === "link_artigo" && value) {
-            return (
-              <div className="flex flex-col">
-                <strong>{label}:</strong>{" "}
-                <a
-                  href={String(value)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-blue-700 underline"
-                >
-                  {value}
-                </a>
-              </div>
-            )
-          }
-          return (
-            <div className="flex flex-col">
-              <strong>{label}:</strong> {String(value ?? "Não informado")}
-            </div>
-          )
-        }}
+            if (field === "data_criacao" && value) {
+    return <span>{format(new Date(value), "dd/MM/yyyy HH:mm")}</span>
+  }
+  if (field === "link_artigo" && value) {
+    return (
+      <a
+        href={String(value)}
+        target="_blank"
+        rel="noreferrer"
+        className="text-blue-700 underline"
+      >
+        {String(value)}
+      </a>
+    )
+  }
+
+  return <span>{String(value ?? "Não informado")}</span>
+}}
+
         fieldsTwoColumns={["supervisor_nome", "data_criacao"]}
         fieldsFullWidth={["titulo", "descricao", "link_artigo"]}
       />

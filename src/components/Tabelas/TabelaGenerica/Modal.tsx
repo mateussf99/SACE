@@ -4,6 +4,8 @@
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { api } from "@/services/api"
+import { X } from "lucide-react"
+
 import {
   Dialog,
   DialogContent,
@@ -160,7 +162,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   arrayEditingStrategy = "primitive-tags",
   onSaved,
   canEdit = true,
-   imagePathTemplate,  
+  imagePathTemplate,
 }: ModalDetalhesProps<T>) {
   const [data, setData] = useState<T | null>(null)
   const [formData, setFormData] = useState<Partial<T>>({})
@@ -174,20 +176,20 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     if (!id || !open) return
     setLoading(true)
     setError(null)
-    ;(async () => {
-      try {
-        const res = await api.get(`${endpoint}/${id}`, {
-          headers: { Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}` },
-        })
-        setData(flattenDeposito(res.data))
-      } catch (e) {
-        setError("Erro ao carregar dados")
-        setData(null)
-        toast.error("Erro ao carregar dados")
-      } finally {
-        setLoading(false)
-      }
-    })()
+      ; (async () => {
+        try {
+          const res = await api.get(`${endpoint}/${id}`, {
+            headers: { Authorization: `Bearer ${localStorage.getItem("auth_token") ?? ""}` },
+          })
+          setData(flattenDeposito(res.data))
+        } catch (e) {
+          setError("Erro ao carregar dados")
+          setData(null)
+          toast.error("Erro ao carregar dados")
+        } finally {
+          setLoading(false)
+        }
+      })()
   }, [id, endpoint, open])
 
 
@@ -219,29 +221,35 @@ export default function ModalDetalhes<T extends Record<string, any>>({
 
 
       const serverData = resp?.data?.data ?? null
-      const merged = serverData
-        ? flattenDeposito(serverData)
-        : flattenDeposito({ ...(data as any), ...(payloadObj as any) })
 
+      // Sempre parte do `data` antigo e sobrescreve só o que voltou / foi editado
+      const baseMerged = serverData
+        ? { ...(data as any), ...(serverData as any) }
+        : { ...(data as any), ...(payloadObj as any) }
 
- if (merged) {
-  setData(prev => {
-    const artigoId =
-      (merged as any)?.artigo_id ??
-      (merged as any)?.id ??
-      (prev as any)?.artigo_id
+      const merged = flattenDeposito(baseMerged)
 
+      if (merged) {
+        setData(prev => {
+          const artigoId =
+            (merged as any)?.artigo_id ??
+            (merged as any)?.id ??
+            (prev as any)?.artigo_id
 
-    if (artigoId) {
-      const imgUrl = buildImageUrl(artigoId)
-      return {
-        ...merged,
-        [nomeDoCampo!]: imgUrl ? `${imgUrl}?t=${Date.now()}` : (merged as T)[nomeDoCampo!],
-      } as T
-    }
-    return merged as T
-  })
-}
+          if (artigoId && nomeDoCampo) {
+            const imgUrl = buildImageUrl(artigoId)
+            return {
+              ...merged,
+              [nomeDoCampo]: imgUrl
+                ? `${imgUrl}?t=${Date.now()}`
+                : (merged as any)[nomeDoCampo],
+            } as T
+          }
+
+          return merged as T
+        })
+      }
+
 
 
 
@@ -265,7 +273,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
 
 
 
-    const buildImageUrl = (itemId: number | null | undefined) => {
+  const buildImageUrl = (itemId: number | null | undefined) => {
     if (itemId == null) return undefined
 
 
@@ -282,95 +290,111 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   const labelOf = (campo: keyof T) => fieldLabels[campo] ?? String(campo)
 
 
-   const renderCampo = (campo: keyof T, valor: T[keyof T]) => {
+  const renderCampo = (campo: keyof T, valor: T[keyof T]) => {
     const value = formData[campo] ?? valor
     const isEditable = modoEdicao && editableFields.includes(campo)
     const label = labelOf(campo)
     const key = String(campo)
 
+    const isFieldEditable = editableFields.includes(campo)
+
+    // texto de visualização:
+    // - em modo edição + campo não editável -> cinza
+    // - demais casos -> azul padrão
+    const viewerTextClass =
+  modoEdicao ? (isFieldEditable  ? "text-blue-800" : "text-gray-500") : "text-blue-dark"
+
+
+    // fundo dos valores:
+    // - em modo edição + campo editável -> levemente mais escuro
+    // - demais casos -> bg-secondary normal
+const valueBgClass =
+  modoEdicao
+    ? (isFieldEditable
+        ? "bg-blue-50 border border-blue-900"
+        : "bg-gray-100 border border-gray-200")
+    : "bg-secondary border border-gray-200"
+
+
+    // container padrão para valores em visualização
+    const viewerContainerClass = `${valueBgClass} rounded-md px-3 py-2`
+
 
     // ===== Campo especial de imagem (para artigos) =====
     if (campo === (nomeDoCampo as keyof T)) {
-     const isFile = typeof File !== "undefined" && (value as any) instanceof File
+      const isFile = typeof File !== "undefined" && (value as any) instanceof File
 
 
 
 
       // Se NÃO for arquivo novo, pegamos a imagem atual pelo artigo_id
-const artigoId =
-  (data as any)?.artigo_id ??
-  (data as any)?.id ??
-  (typeof value === "number" ? value : undefined)
+      const artigoId =
+        (data as any)?.artigo_id ??
+        (data as any)?.id ??
+        (typeof value === "number" ? value : undefined)
 
 
-let imageSrc: string | undefined
+      let imageSrc: string | undefined
 
-if (!isFile) {
-  if (typeof value === "string" && value.length > 0) {
-    imageSrc = value
-  } else if (artigoId != null) {
-    imageSrc = buildImageUrl(artigoId)
-  }
-}
+      if (!isFile) {
+        if (typeof value === "string" && value.length > 0) {
+          imageSrc = value
+        } else if (artigoId != null) {
+          imageSrc = buildImageUrl(artigoId)
+        }
+      }
 
       return (
-        <div className="flex flex-col gap-2 text-blue-dark">
-          <strong className="text-sm">{label}:</strong>
+        <div
+          className={`flex flex-col gap-2 text-sm ${isEditable ? "text-blue-dark" : viewerTextClass}`}
+        >
+          <strong className={isEditable ? "text-blue-dark" : viewerTextClass}>{label}:</strong>
 
 
-          {/* Imagem atual só aparece se NÃO tiver um arquivo novo selecionado */}
-          {!isFile && imageSrc && (
-            <img
-              src={imageSrc}
-              alt="Imagem do artigo"
-              className="w-40 h-40 object-cover rounded-md border border-blue-100"
-            />
-          )}
 
-
-          {/* Quando um novo arquivo é selecionado, mostra só o nome dele */}
-          {isFile && (
-            <span className="text-xs mt-1">
-              Nova imagem selecionada: {(value as File).name}
-            </span>
-          )}
-
-
-          {/* Nada de imprimir String(valor) aqui, pra não aparecer a URL */}
-          {/* <span className="text-sm">{String(valor)}</span>  <-- REMOVIDO */}
-
-
-          {modoEdicao && (
-            <label className="cursor-pointer text-blue-dark underline text-xs mt-1">
-              Selecionar nova imagem
-              <input
-                hidden
-                type="file"
-                accept="image/*"
-                onChange={e => {
-                  if (e.target.files?.[0]) {
-                    const file = e.target.files[0]
-
-
-                    // joga o arquivo no formData (value passa a ser File)
-                    handleChange(campo, file)
-
-
-                    // Se ainda quiser manter um preview local (sem mostrar URL do backend)
-                    const previewUrl = URL.createObjectURL(file)
-                    setData(prev =>
-                      prev
-                        ? ({
-                            ...prev,
-                            [campo]: previewUrl, // não é exibido enquanto value for File
-                          } as T)
-                        : prev
-                    )
-                  }
-                }}
+          <div className={viewerContainerClass}>
+            {/* Imagem atual só aparece se NÃO tiver um arquivo novo selecionado */}
+            {!isFile && imageSrc && (
+              <img
+                src={imageSrc}
+                alt="Imagem do artigo"
+                className="w-40 h-40 object-cover rounded-md border border-blue-100"
               />
-            </label>
-          )}
+            )}
+
+            {/* Quando um novo arquivo é selecionado, mostra só o nome dele */}
+            {isFile && (
+              <span className="text-xs mt-1">
+                Nova imagem selecionada: {(value as File).name}
+              </span>
+            )}
+
+            {modoEdicao && (
+              <label className="cursor-pointer text-blue-dark underline text-xs mt-1">
+                Selecionar nova imagem
+                <input
+                  hidden
+                  type="file"
+                  accept="image/*"
+                  onChange={e => {
+                    if (e.target.files?.[0]) {
+                      const file = e.target.files[0]
+                      handleChange(campo, file)
+                      const previewUrl = URL.createObjectURL(file)
+                      setData(prev =>
+                        prev
+                          ? ({
+                            ...prev,
+                            [campo]: previewUrl,
+                          } as T)
+                          : prev
+                      )
+                    }
+                  }}
+                />
+              </label>
+            )}
+          </div>
         </div>
       )
     }
@@ -378,7 +402,7 @@ if (!isFile) {
 
     if (isEditable && customEditors[key])
       return (
-        <div className="text-blue-dark text-sm">
+        <div className={`${viewerContainerClass} ${viewerTextClass} text-sm`}>
           {customEditors[key]!({
             field: campo,
             value,
@@ -390,13 +414,31 @@ if (!isFile) {
         </div>
       )
 
+    if (!isEditable && customViewers[key]) {
+      const rendered = customViewers[key]!({ field: campo, value, label, data })
+      if (rendered == null) return null
+      if (key.startsWith("__label_")) {
+        // Não coloca label nem fundo azul, só deixa o viewer renderizar
+        return (
+          <div className="text-sm">
+            {customViewers[key]!({ field: campo, value, label, data })}
+          </div>
+        )
+      }
 
-    if (!isEditable && customViewers[key])
+      // 🔹 Demais customViewers (com label fora e fundo azul só no valor)
       return (
-        <div className="text-blue-dark text-sm">
-          {customViewers[key]!({ field: campo, value, label, data })}
+        <div className="flex flex-col text-sm">
+          <strong className={viewerTextClass}>{label}:</strong>
+          <div className={`${viewerContainerClass} ${viewerTextClass}`}>
+            {customViewers[key]!({ field: campo, value, label, data })}
+          </div>
         </div>
       )
+    }
+
+
+
 
 
     if (isEditable) {
@@ -419,11 +461,13 @@ if (!isFile) {
       if (selectFields.includes(campo))
         return (
           <div className="flex flex-col w-full text-blue-dark text-sm">
-            <strong className="mb-1">{label}:</strong>
+           <strong className={`mb-1 ${viewerTextClass}`}>{label}:</strong>
+
             <select
               value={value ?? ""}
               onChange={e => handleChange(campo, e.target.value)}
-              className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark"
+             className={`${valueBgClass} text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark`}
+
             >
               <option value="">Selecione...</option>
               {selectOptions[campo]?.map((opt, i) => (
@@ -457,7 +501,8 @@ if (!isFile) {
 
         return (
           <div className="flex flex-col w-full mb-2 text-blue-dark text-sm">
-            <strong>{label}:</strong>
+            <strong className={viewerTextClass}>{label}:</strong>
+
             <div className="flex flex-wrap gap-2 mt-1">
               {(value as any[]).map((item, i) => (
                 <div
@@ -479,7 +524,9 @@ if (!isFile) {
               <input
                 type="text"
                 placeholder="Novo item"
-                className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark text-sm"
+                className={`${valueBgClass} text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark text-sm`}
+
+
                 value={novoValor}
                 onChange={e => setNovosValores(p => ({ ...p, [key]: e.target.value }))}
               />
@@ -498,12 +545,15 @@ if (!isFile) {
       // texto padrão
       return (
         <div className="flex flex-col w-full text-blue-dark text-sm">
-          <strong>{label}:</strong>
+        <strong className={viewerTextClass}>{label}:</strong>
+
           <input
             type="text"
             value={String(value ?? "")}
             onChange={e => handleChange(campo, e.target.value)}
-            className="bg-secondary border-none text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark mt-1"
+           className={`${valueBgClass} text-blue-dark rounded-md px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-dark mt-1`}
+
+
           />
         </div>
       )
@@ -531,10 +581,12 @@ if (!isFile) {
         })
         .join(", ")
 
-
       return (
-        <div className="flex flex-col text-blue-dark text-sm">
-          <strong>{label}:</strong> {joined || "Não informado"}
+        <div className="flex flex-col text-sm">
+          <strong className={viewerTextClass}>{label}:</strong>
+          <div className={viewerContainerClass}>
+            {joined || "Não informado"}
+          </div>
         </div>
       )
     }
@@ -543,8 +595,11 @@ if (!isFile) {
     if (selectFields.includes(campo)) {
       const opt = selectOptions[campo]?.find(o => o.value === value)
       return (
-        <div className="flex flex-col text-blue-dark text-sm">
-          <strong>{label}:</strong> {opt?.label ?? "Não informado"}
+        <div className="flex flex-col text-sm">
+          <strong className={viewerTextClass}>{label}:</strong>
+          <div className={viewerContainerClass}>
+            {opt?.label ?? "Não informado"}
+          </div>
         </div>
       )
     }
@@ -552,18 +607,28 @@ if (!isFile) {
 
     if (renderField) {
       return (
-        <div className="text-blue-dark text-sm">
-          {renderField(campo, value as T[keyof T])}
+        <div className="flex flex-col text-sm">
+          <strong className={viewerTextClass}>{label}:</strong>
+          <div className={viewerContainerClass}>
+            {renderField(campo, value as T[keyof T])}
+          </div>
         </div>
       )
     }
 
 
+
+
+
     return (
-      <div className="text-blue-dark text-sm">
-        <strong>{label}:</strong> {String(value ?? "Não informado")}
+      <div className="flex flex-col text-sm">
+        <strong className={viewerTextClass}>{label}:</strong>
+        <div className={viewerContainerClass}>
+          {String(value ?? "Não informado")}
+        </div>
       </div>
     )
+
   }
 
 
@@ -598,16 +663,28 @@ if (!isFile) {
       }}
     >
       <DialogContent className="bg-white border-none sm:max-w-[660px] p-0 rounded-2xl shadow-lg overflow-hidden">
-        <div className="sticky top-0 z-10 bg-white border-b px-6 py-4 rounded-t-2xl">
-          <DialogHeader className="p-0 space-y-1">
-            <DialogTitle className="text-lg font-semibold text-blue-dark">
-              Detalhes
-            </DialogTitle>
-            <DialogDescription className="text-sm text-blue-dark">
-              Informações do item selecionado.
-            </DialogDescription>
-          </DialogHeader>
-        </div>
+  <div className="sticky top-0 z-10 bg-white  px-6 py-4 rounded-t-2xl">
+    <div className="flex items-start justify-between">
+      <DialogHeader className="p-0 space-y-1">
+        <DialogTitle className="text-lg font-semibold text-blue-dark">
+          Detalhes
+        </DialogTitle>
+        <DialogDescription className="text-sm text-blue-dark">
+          Informações do item selecionado.
+        </DialogDescription>
+      </DialogHeader>
+
+      <button
+        type="button"
+        onClick={() => onOpenChange(false)}
+        className="ml-3 text-blue-dark hover:text-blue-900"
+        aria-label="Fechar"
+      >
+        <X className="w-5 h-5" />
+      </button>
+    </div>
+  </div>
+
 
 
         <div className="max-h-[80vh] overflow-y-auto px-6 py-4 bg-white text-blue-dark">
@@ -629,9 +706,8 @@ if (!isFile) {
                       setFormData({})
                     }}
                     disabled={!canEdit}
-                    className={`bg-blue-dark text-white hover:bg-blue ${
-                      !canEdit ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
+                    className={`bg-blue-dark text-white hover:bg-blue ${!canEdit ? "opacity-50 cursor-not-allowed" : ""
+                      }`}
                     title={
                       canEdit ? undefined : "Somente leitura para seu nível de acesso"
                     }

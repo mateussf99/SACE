@@ -13,6 +13,7 @@ import { format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Edit, Trash2, EllipsisVertical, X } from "lucide-react"
 import { api } from "@/services/api"
+import { toast } from "react-toastify"
 
 import {
   Dialog,
@@ -328,7 +329,8 @@ const isAgente = role.includes("agente")
         403: "Acesso proibido.",
         404: "Denúncia não encontrada.",
       }
-      alert(msg[e.response?.status] || "Erro interno.")
+     toast.error(msg[e?.response?.status] || "Erro interno.")
+
       throw e
     }
   }
@@ -446,7 +448,7 @@ const isAgente = role.includes("agente")
     confirmDelete(
       async () => {
         const resp = await deletarDenuncia([id])
-        alert(resp.message)
+        toast.success(resp?.message || "Denúncia excluída com sucesso.")
         setData(p => p.filter(d => d.id !== id))
       },
       "Deseja realmente excluir esta área?",
@@ -524,12 +526,10 @@ const isAgente = role.includes("agente")
     { key: "status", label: "Status" },
   ]
 
- const renderField = (field: keyof Denuncia, value: unknown) => (
-  <div className="flex flex-col">
-    <strong>{fieldLabels[field] ?? field}:</strong>{" "}
-    {String(value ?? "Não informado")}
-  </div>
+const renderField = (_field: keyof Denuncia, value: unknown) => (
+  <span>{String(value ?? "Não informado")}</span>
 )
+
 
 
  const handleDenunciaSaved = (updated: Denuncia) => {
@@ -573,27 +573,23 @@ const isAgente = role.includes("agente")
   )
 }
 
-  const customViewers = {
+const customViewers = {
   agente_responsavel_id: (args: any) => {
     const idNum = args.value != null ? Number(args.value) : undefined
     const found =
       idNum != null && !Number.isNaN(idNum)
         ? agentesOptions.find(a => a.id === idNum)
         : undefined
-    return (
-      <div className="flex flex-col">
-        <strong>{args.label}:</strong> {found?.nome ?? "Não definido"}
-      </div>
-    )
+
+    return <span>{found?.nome ?? "Não definido"}</span>
   },
 
-  arquivos: ({ value, label }: { value: any; label: string }) => {
+   arquivos: ({ value }: { value: any }) => {
     const arr = Array.isArray(value) ? value : []
 
     if (!arr.length) {
       return (
         <div className="flex flex-col gap-2">
-          <strong>{label ?? "Arquivos"}:</strong>
           <span className="text-sm text-gray-500">Nenhum arquivo</span>
         </div>
       )
@@ -601,8 +597,6 @@ const isAgente = role.includes("agente")
 
     return (
       <div className="flex flex-col gap-2">
-        <strong>{label ?? "Arquivos"}:</strong>
-
         {/* imagens lado a lado, quebrando linha se não couber */}
         <div className="flex flex-wrap gap-4 mt-2">
           {arr.map(
