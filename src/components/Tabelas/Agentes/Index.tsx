@@ -61,7 +61,7 @@ export type RowData = {
 
 type SetorAtuacao = { setor?: string; bairro?: string }
 
-const SetorAtuacaoViewer = ({ label, value }: { label: string; value: any }) => {
+const SetorAtuacaoViewer = ({ value }: { label: string; value: any }) => {
   const lista = (Array.isArray(value) ? value : []) as SetorAtuacao[]
 
   return (
@@ -782,7 +782,7 @@ function Index() {
         sendAsJson={true}
         onBeforeSubmit={handleBeforeSubmitAgente}
          renderField={(field, value) => {
-    const label = labels[field as keyof typeof labels] ?? field
+
 
     if (field === "situacao_atual") {
       return <span>{value ? "Ativo" : "Desligado"}</span>
