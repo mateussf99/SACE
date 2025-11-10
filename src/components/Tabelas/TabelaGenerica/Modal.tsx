@@ -1,5 +1,6 @@
 "use client"
 
+
 import { useEffect, useState } from "react"
 import { toast } from "react-toastify"
 import { api } from "@/services/api"
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
+
 type EditorArgs<T> = {
   field: keyof T
   value: T[keyof T] | undefined
@@ -21,12 +23,14 @@ type EditorArgs<T> = {
   formData: Partial<T>
 }
 
+
 type ViewerArgs<T> = {
   field: keyof T
   value: T[keyof T] | undefined
   label: string
   data: T | null
 }
+
 
 interface ModalDetalhesProps<T extends Record<string, any>> {
   id: number | null
@@ -37,30 +41,40 @@ interface ModalDetalhesProps<T extends Record<string, any>> {
   onSaved?: (updated: any) => void
   canEdit?: boolean
 
+
   fieldLabels?: Partial<Record<keyof T, string>>
   renderField?: (field: keyof T, value: T[keyof T]) => React.ReactNode
   nomeDoCampo?: string
+
 
   editableFields?: (keyof T)[]
   selectFields?: (keyof T)[]
   selectOptions?: Partial<Record<keyof T, Array<{ value: any; label: string }>>>
 
+
   fieldsTwoColumns?: (keyof T)[]
   fieldsThreeColumns?: (keyof T)[]
   fieldsFullWidth?: (keyof T)[]
 
+
   sendAsJson?: boolean
   onBeforeSubmit?: (payload: any) => any | FormData
+
 
   customEditors?: Partial<Record<string, (args: EditorArgs<T>) => React.ReactNode>>
   customViewers?: Partial<Record<string, (args: ViewerArgs<T>) => React.ReactNode>>
 
+
   arrayEditingStrategy?: "none" | "primitive-tags"
+  imagePathTemplate?: string
 }
+
 
 /* ========= Helpers globais ========= */
 
+
 const DEPOSITOS_KEYS = ["a1", "a2", "b", "c", "d1", "d2", "e"] as const
+
 
 const flattenDeposito = <T extends Record<string, any>>(obj: T | null): T | null => {
   if (!obj || typeof obj !== "object") return obj
@@ -70,22 +84,16 @@ const flattenDeposito = <T extends Record<string, any>>(obj: T | null): T | null
   return out
 }
 
-// const isFormData = (x: any): x is FormData =>
-//   typeof FormData !== "undefined" && x instanceof FormData
 
-// const dumpFormData = (fd: FormData) => {
-//   const rows: Array<{ key: string; value: string }> = []
-//   for (const [k, v] of fd.entries())
-//     rows.push(
-//       v instanceof File
-//         ? { key: k, value: `[File] name=${v.name} size=${v.size} type=${v.type}` }
-//         : { key: k, value: String(v) }
-//     )
-// }
+
+
+
+
 
 
 
 const dumpAxiosError = (e: any) => {
+
 
   const server = e?.response?.data
   if (server?.errors && typeof server.errors === "object") {
@@ -95,10 +103,13 @@ const dumpAxiosError = (e: any) => {
     console.log("fieldErrors:", flat.join(" | "))
   }
 
+
 }
+
 
 const isPrimitiveArray = (arr: any[]) =>
   arr.every(v => ["string", "number", "boolean"].includes(typeof v))
+
 
 const buildUnifiedPayload = <T extends Record<string, any>>(
   base: Partial<T>,
@@ -120,7 +131,12 @@ const buildUnifiedPayload = <T extends Record<string, any>>(
 const API_BASE = (api.defaults.baseURL || "").replace(/\/$/, "")
 
 
+
+
+
+
 /* ========== Componente ========== */
+
 
 export default function ModalDetalhes<T extends Record<string, any>>({
   id,
@@ -144,6 +160,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   arrayEditingStrategy = "primitive-tags",
   onSaved,
   canEdit = true,
+   imagePathTemplate,  
 }: ModalDetalhesProps<T>) {
   const [data, setData] = useState<T | null>(null)
   const [formData, setFormData] = useState<Partial<T>>({})
@@ -151,6 +168,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
   const [error, setError] = useState<string | null>(null)
   const [modoEdicao, setModoEdicao] = useState(false)
   const [novosValores, setNovosValores] = useState<Record<string, string>>({})
+
 
   useEffect(() => {
     if (!id || !open) return
@@ -172,8 +190,10 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     })()
   }, [id, endpoint, open])
 
+
   const handleChange = (field: keyof T, value: any) =>
     setFormData(prev => ({ ...prev, [field]: value }))
+
 
   const handleAplicar = async () => {
     if (!id || !data || !canEdit) return
@@ -186,7 +206,9 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       })
       const unifiedPayload = buildUnifiedPayload(payloadObj, sendAsJson, onBeforeSubmit)
 
+
       // isFormData(unifiedPayload) ? dumpFormData(unifiedPayload) : dumpJson(unifiedPayload)
+
 
       const resp = await api.put(`${endpoint}/${id}`, unifiedPayload, {
         headers: {
@@ -195,27 +217,34 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         },
       })
 
+
       const serverData = resp?.data?.data ?? null
       const merged = serverData
         ? flattenDeposito(serverData)
         : flattenDeposito({ ...(data as any), ...(payloadObj as any) })
 
-      if (merged) {
+
+ if (merged) {
   setData(prev => {
     const artigoId =
       (merged as any)?.artigo_id ??
       (merged as any)?.id ??
       (prev as any)?.artigo_id
 
+
     if (artigoId) {
+      const imgUrl = buildImageUrl(artigoId)
       return {
         ...merged,
-        [nomeDoCampo!]: `${API_BASE}/artigo/img/${artigoId}?t=${Date.now()}`
-      }
+        [nomeDoCampo!]: imgUrl ? `${imgUrl}?t=${Date.now()}` : (merged as T)[nomeDoCampo!],
+      } as T
     }
     return merged as T
   })
 }
+
+
+
 
       toast.success("Atualizado com sucesso!")
       setModoEdicao(false)
@@ -233,7 +262,25 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     }
   }
 
+
+
+
+    const buildImageUrl = (itemId: number | null | undefined) => {
+    if (itemId == null) return undefined
+
+
+    // se o template foi passado, ex: "/artigo/img/:id"
+    const path = imagePathTemplate
+      ? imagePathTemplate.replace(":id", String(itemId))
+      : `/artigo/img/${itemId}` // fallback pro comportamento antigo
+
+
+    return `${API_BASE}${path}`
+  }
+
+
   const labelOf = (campo: keyof T) => fieldLabels[campo] ?? String(campo)
+
 
    const renderCampo = (campo: keyof T, valor: T[keyof T]) => {
     const value = formData[campo] ?? valor
@@ -241,23 +288,35 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     const label = labelOf(campo)
     const key = String(campo)
 
+
     // ===== Campo especial de imagem (para artigos) =====
     if (campo === (nomeDoCampo as keyof T)) {
      const isFile = typeof File !== "undefined" && (value as any) instanceof File
 
 
-      // Se NÃO for arquivo novo, pegamos a imagem atual pelo artigo_id
-      const artigoId =
-        (data as any)?.artigo_id ??
-        (data as any)?.id ??
-        (typeof value === "number" ? value : undefined)
 
-      const imageSrc =
-        !isFile && artigoId != null ? `${API_BASE}/artigo/img/${artigoId}` : undefined
+
+      // Se NÃO for arquivo novo, pegamos a imagem atual pelo artigo_id
+const artigoId =
+  (data as any)?.artigo_id ??
+  (data as any)?.id ??
+  (typeof value === "number" ? value : undefined)
+
+
+let imageSrc: string | undefined
+
+if (!isFile) {
+  if (typeof value === "string" && value.length > 0) {
+    imageSrc = value
+  } else if (artigoId != null) {
+    imageSrc = buildImageUrl(artigoId)
+  }
+}
 
       return (
         <div className="flex flex-col gap-2 text-blue-dark">
           <strong className="text-sm">{label}:</strong>
+
 
           {/* Imagem atual só aparece se NÃO tiver um arquivo novo selecionado */}
           {!isFile && imageSrc && (
@@ -268,6 +327,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
             />
           )}
 
+
           {/* Quando um novo arquivo é selecionado, mostra só o nome dele */}
           {isFile && (
             <span className="text-xs mt-1">
@@ -275,8 +335,10 @@ export default function ModalDetalhes<T extends Record<string, any>>({
             </span>
           )}
 
+
           {/* Nada de imprimir String(valor) aqui, pra não aparecer a URL */}
           {/* <span className="text-sm">{String(valor)}</span>  <-- REMOVIDO */}
+
 
           {modoEdicao && (
             <label className="cursor-pointer text-blue-dark underline text-xs mt-1">
@@ -289,8 +351,10 @@ export default function ModalDetalhes<T extends Record<string, any>>({
                   if (e.target.files?.[0]) {
                     const file = e.target.files[0]
 
+
                     // joga o arquivo no formData (value passa a ser File)
                     handleChange(campo, file)
+
 
                     // Se ainda quiser manter um preview local (sem mostrar URL do backend)
                     const previewUrl = URL.createObjectURL(file)
@@ -311,6 +375,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       )
     }
 
+
     if (isEditable && customEditors[key])
       return (
         <div className="text-blue-dark text-sm">
@@ -325,12 +390,14 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         </div>
       )
 
+
     if (!isEditable && customViewers[key])
       return (
         <div className="text-blue-dark text-sm">
           {customViewers[key]!({ field: campo, value, label, data })}
         </div>
       )
+
 
     if (isEditable) {
       // boolean
@@ -346,6 +413,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
             <span className="select-none">{label}</span>
           </label>
         )
+
 
       // select
       if (selectFields.includes(campo))
@@ -367,6 +435,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           </div>
         )
 
+
       // array com "tags"
       if (Array.isArray(value) && arrayEditingStrategy === "primitive-tags" && isPrimitiveArray(value)) {
         const novoValor = novosValores[key] ?? ""
@@ -374,14 +443,17 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         const castFromString = (str: string) =>
           baseType === "number" ? Number(str) : baseType === "boolean" ? str === "true" : str
 
+
         const add = () => {
           if (!novoValor.trim()) return
           handleChange(campo, [...(value as any[]), castFromString(novoValor)])
           setNovosValores(p => ({ ...p, [key]: "" }))
         }
 
+
         const removeAt = (i: number) =>
           handleChange(campo, (value as any[]).filter((_, x) => x !== i))
+
 
         return (
           <div className="flex flex-col w-full mb-2 text-blue-dark text-sm">
@@ -422,6 +494,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         )
       }
 
+
       // texto padrão
       return (
         <div className="flex flex-col w-full text-blue-dark text-sm">
@@ -435,6 +508,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         </div>
       )
     }
+
 
     // modo visualização
     if (Array.isArray(value)) {
@@ -457,12 +531,14 @@ export default function ModalDetalhes<T extends Record<string, any>>({
         })
         .join(", ")
 
+
       return (
         <div className="flex flex-col text-blue-dark text-sm">
           <strong>{label}:</strong> {joined || "Não informado"}
         </div>
       )
     }
+
 
     if (selectFields.includes(campo)) {
       const opt = selectOptions[campo]?.find(o => o.value === value)
@@ -473,6 +549,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       )
     }
 
+
     if (renderField) {
       return (
         <div className="text-blue-dark text-sm">
@@ -481,12 +558,14 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       )
     }
 
+
     return (
       <div className="text-blue-dark text-sm">
         <strong>{label}:</strong> {String(value ?? "Não informado")}
       </div>
     )
   }
+
 
   const renderCampos = () => {
     if (!data) return null
@@ -504,6 +583,7 @@ export default function ModalDetalhes<T extends Record<string, any>>({
       )
     })
   }
+
 
   return (
     <Dialog
@@ -529,13 +609,16 @@ export default function ModalDetalhes<T extends Record<string, any>>({
           </DialogHeader>
         </div>
 
+
         <div className="max-h-[80vh] overflow-y-auto px-6 py-4 bg-white text-blue-dark">
           {loading && <p className="py-4 text-sm">Carregando...</p>}
           {error && <p className="text-red-600 py-4 text-sm">{error}</p>}
 
+
           {data && !loading && !error && (
             <div className="space-y-4 text-sm">
               <div className="grid grid-cols-6 gap-4">{renderCampos()}</div>
+
 
               <div className="flex justify-end gap-2 pt-3 border-t border-blue-dark/20 mt-2">
                 {!modoEdicao ? (
@@ -590,3 +673,6 @@ export default function ModalDetalhes<T extends Record<string, any>>({
     </Dialog>
   )
 }
+
+
+
