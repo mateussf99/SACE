@@ -46,7 +46,7 @@ function Index() {
         </nav>
 
         
-        <div className="flex pl-2 sm:pl-4">
+        <div className="flex pl-2 pr-1 sm:pl-4">
           <Link to="/login">
             <Button
               className="px-3 py-1 text-xs sm:text-base md:text-lg xl:text-xl bg-gradient-to-r from-blue to-blue-dark text-white shadow-md whitespace-nowrap"
