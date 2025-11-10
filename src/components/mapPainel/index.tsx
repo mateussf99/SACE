@@ -243,7 +243,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   return (
     <div
       id="map-panel"
-      className={`absolute border-none left-2 sm:left-3 top-15  md:top-15 z-[1100] w-[290px]  sm:w-[300px] md:w-[360px] lg:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
+      className={`absolute border-none left-4 top-15  md:top-15 z-[1100] w-[290px]  sm:w-[300px] md:w-[360px] lg:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
     >
       <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
         <CardHeader className="gap-2 sm:gap-3">
