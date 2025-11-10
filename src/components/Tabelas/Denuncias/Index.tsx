@@ -13,6 +13,7 @@ import { format, isValid } from "date-fns"
 import { Card } from "@/components/ui/card"
 import { Edit, Trash2, EllipsisVertical, X } from "lucide-react"
 import { api } from "@/services/api"
+
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,7 @@ export type DenunciasTabelaProps = {
 
   disableOwnFetch?: boolean
 }
+
 
 const fieldLabels: Record<string, string> = {
   data_denuncia: "Data",
@@ -148,6 +150,74 @@ const aplicarFiltros = (
 
   return filtered
 }
+
+
+function DenunciaArquivoImg({
+  arquivoId,
+  nome,
+}: {
+  arquivoId: number
+  nome: string
+}) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [erro, setErro] = useState(false)
+
+  useEffect(() => {
+    let cancelado = false
+    let objectUrl: string | null = null
+
+    const fetchImg = async () => {
+      try {
+        const resp = await api.get(`/denuncia/arquivo/${arquivoId}`, {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+          },
+        })
+
+        objectUrl = URL.createObjectURL(resp.data)
+        if (!cancelado) {
+          setSrc(objectUrl)
+        }
+      } catch (e) {
+        console.error("Erro ao carregar imagem de denúncia:", e)
+        if (!cancelado) setErro(true)
+      }
+    }
+
+    fetchImg()
+
+    return () => {
+      cancelado = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [arquivoId])
+
+  if (erro) {
+    return (
+      <div className="w-32 h-32 flex items-center justify-center text-[10px] text-red-600 border border-dashed border-red-300 rounded-md text-center px-1">
+        Erro ao carregar
+      </div>
+    )
+  }
+
+  if (!src) {
+    return (
+      <div className="w-32 h-32 flex items-center justify-center text-[10px] text-gray-500 border border-dashed border-gray-300 rounded-md text-center px-1">
+        Carregando...
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={nome}
+      className="w-32 h-32 object-cover rounded-md border border-blue-100"
+    />
+  )
+}
+
 
 const StatusBadge = ({ value }: { value: string }) => {
   const colorClass = statusColors[value] ?? statusColors.default
@@ -453,17 +523,13 @@ const isAgente = role.includes("agente")
     { key: "status", label: "Status" },
   ]
 
-  const renderField = (field: keyof Denuncia, value: unknown) =>
-    field === "arquivos" && Array.isArray(value) ? (
-      value.map(a => (
-        <div key={a.arquivo_denuncia_id}>{a.arquivo_nome}</div>
-      ))
-    ) : (
-      <div className="flex flex-col">
-        <strong>{fieldLabels[field] ?? field}:</strong>{" "}
-        {String(value ?? "Não informado")}
-      </div>
-    )
+ const renderField = (field: keyof Denuncia, value: unknown) => (
+  <div className="flex flex-col">
+    <strong>{fieldLabels[field] ?? field}:</strong>{" "}
+    {String(value ?? "Não informado")}
+  </div>
+)
+
 
   const handleDenunciaSaved = (updated: Denuncia) => {
     if (!updated?.denuncia_id) return
@@ -501,19 +567,55 @@ const isAgente = role.includes("agente")
   }
 
   const customViewers = {
-    agente_responsavel_id: (args: any) => {
-      const idNum = args.value != null ? Number(args.value) : undefined
-      const found =
-        idNum != null && !Number.isNaN(idNum)
-          ? agentesOptions.find(a => a.id === idNum)
-          : undefined
+  agente_responsavel_id: (args: any) => {
+    const idNum = args.value != null ? Number(args.value) : undefined
+    const found =
+      idNum != null && !Number.isNaN(idNum)
+        ? agentesOptions.find(a => a.id === idNum)
+        : undefined
+    return (
+      <div className="flex flex-col">
+        <strong>{args.label}:</strong> {found?.nome ?? "Não definido"}
+      </div>
+    )
+  },
+
+  arquivos: ({ value, label }: { value: any; label: string }) => {
+    const arr = Array.isArray(value) ? value : []
+
+    if (!arr.length) {
       return (
-        <div className="flex flex-col">
-          <strong>{args.label}:</strong> {found?.nome ?? "Não definido"}
+        <div className="flex flex-col gap-2">
+          <strong>{label ?? "Arquivos"}:</strong>
+          <span className="text-sm text-gray-500">Nenhum arquivo</span>
         </div>
       )
-    },
-  }
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        <strong>{label ?? "Arquivos"}:</strong>
+
+        {/* imagens lado a lado, quebrando linha se não couber */}
+        <div className="flex flex-wrap gap-4 mt-2">
+          {arr.map(
+            (a: { arquivo_denuncia_id: number; arquivo_nome: string }) => (
+              <div
+                key={a.arquivo_denuncia_id}
+                className="flex flex-col items-start gap-1"
+              >
+                <DenunciaArquivoImg
+                  arquivoId={a.arquivo_denuncia_id}
+                  nome={a.arquivo_nome}
+                />
+              </div>
+            ),
+          )}
+        </div>
+      </div>
+    )
+  },
+}
 
   return (
     <Card className="space-y-4 min-w-[170px] p-2 lg:p-4 xl:p-6 border-none shadow-none">
