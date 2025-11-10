@@ -26,7 +26,6 @@ export default function Nudges() {
     setError(null)
     try {
       const { data } = await api.get('/nudges')
-      // aceita payload plano ou paginado (data.data)
       const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : []
       setNudges(list)
     } catch (e: any) {
@@ -40,6 +39,17 @@ export default function Nudges() {
 
   useEffect(() => {
     fetchNudges()
+  }, [])
+
+  // >>> ADICIONADO: escuta criação de novo nudge
+  useEffect(() => {
+    function handleCreated(ev: Event) {
+      const custom = ev as CustomEvent<Nudge>
+      if (!custom.detail) return
+      setNudges(prev => [custom.detail, ...prev])
+    }
+    window.addEventListener('nudge:created', handleCreated)
+    return () => window.removeEventListener('nudge:created', handleCreated)
   }, [])
 
   function handleUpdated(updated: Nudge) {
