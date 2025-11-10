@@ -50,19 +50,19 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
       return
     }
 
-    const payload = {
-      titulo: title.trim(),
-      descricao: message.trim(),
-      url: url.trim() || undefined,
-    }
-
     setEnviando(true)
     try {
-      await api.post("/nudges", payload)
+      const { data } = await api.post("/nudges", {
+        titulo: title.trim(),
+        descricao: message.trim(),
+        url: url.trim() || null,
+      })
+
+      // envia o objeto criado para a lista
+      window.dispatchEvent(new CustomEvent('nudge:created', { detail: data }))
       toast.success("Nudge criado com sucesso!")
 
       if (onFinish) {
-        // mantém assinatura antiga caso queira reaproveitar
         await onFinish({ title, message, url: url.trim() || undefined })
       }
 
