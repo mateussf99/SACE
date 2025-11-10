@@ -9,6 +9,7 @@ import DenunciasTabela, { type Denuncia } from "@/components/Tabelas/Denuncias/I
 import { ConfirmarCasosModal } from "@/components/atualizarFocosConfirmados/index"
 
 
+
 import { useRegistros } from "@/hooks/useRegistros"
 import { Button } from "@/components/ui/button"
 import { ClipboardPlus, FileText, Loader2, ChevronDown, ChevronUp } from "lucide-react"
@@ -111,83 +112,83 @@ export default function PaginaListas() {
   }
 
   useEffect(() => {
-  if (!isAgente) return
+    if (!isAgente) return
 
-  const token =
-    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
-  if (!token) return
+    const token =
+      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+    if (!token) return
 
-  const payload = decodeJwtPayload<JwtPayload>(token)
-  const tokenId = coerceNum(payload?.agente_id)
-  if (tokenId == null) return
+    const payload = decodeJwtPayload<JwtPayload>(token)
+    const tokenId = coerceNum(payload?.agente_id)
+    if (tokenId == null) return
 
-  const carregar = async () => {
-    setLoadingAgenteDados(true)
-    setErroAgenteDados(null)
-
-    try {
-      let idParaAreas = tokenId
+    const carregar = async () => {
+      setLoadingAgenteDados(true)
+      setErroAgenteDados(null)
 
       try {
-        // 1) Buscar todos os agentes
-        const { data: usuariosResp } = await api.get("/usuarios", {
-          headers: { Authorization: `Bearer ${token}` },
-        })
+        let idParaAreas = tokenId
 
-        const agentes = Array.isArray(usuariosResp.agentes)
-          ? usuariosResp.agentes
-          : []
+        try {
+          // 1) Buscar todos os agentes
+          const { data: usuariosResp } = await api.get("/usuarios", {
+            headers: { Authorization: `Bearer ${token}` },
+          })
 
-        // 2) Achar o agente logado pelo id do token
-        const agenteLogado = agentes.find(
-          (a: any) =>
-            a.agente_id === tokenId || a.usuario_id === tokenId,
-        )
+          const agentes = Array.isArray(usuariosResp.agentes)
+            ? usuariosResp.agentes
+            : []
 
-        if (agenteLogado) {
-          // Se o tokenId bate com usuario_id, provavelmente o back
-          // está usando agente_id nas áreas → corrigimos aqui
-          if (
-            agenteLogado.usuario_id === tokenId &&
-            agenteLogado.agente_id != null
-          ) {
-            idParaAreas = agenteLogado.agente_id
+          // 2) Achar o agente logado pelo id do token
+          const agenteLogado = agentes.find(
+            (a: any) =>
+              a.agente_id === tokenId || a.usuario_id === tokenId,
+          )
+
+          if (agenteLogado) {
+            // Se o tokenId bate com usuario_id, provavelmente o back
+            // está usando agente_id nas áreas → corrigimos aqui
+            if (
+              agenteLogado.usuario_id === tokenId &&
+              agenteLogado.agente_id != null
+            ) {
+              idParaAreas = agenteLogado.agente_id
+            }
+
+            // Guardar o agente_id real para outros usos (ex: ConfirmarCasosModal)
+            setAgenteId(agenteLogado.agente_id ?? tokenId)
+          } else {
+            // fallback se não encontrar nada
+            setAgenteId(tokenId)
           }
-
-          // Guardar o agente_id real para outros usos (ex: ConfirmarCasosModal)
-          setAgenteId(agenteLogado.agente_id ?? tokenId)
-        } else {
-          // fallback se não encontrar nada
+        } catch (e) {
+          console.error("Erro ao tentar resolver agente_id/usuario_id:", e)
+          // fallback: usa o id do token mesmo
           setAgenteId(tokenId)
         }
+
+        // 3) Agora usa o idParaAreas para áreas e denúncias
+        const { data } = await api.get<AreasDenunciasResponse>(
+          `/area_de_visita_denuncias/${idParaAreas}`,
+          { headers: { Authorization: `Bearer ${token}` } },
+        )
+
+        setAreasAgente(data.areas_de_visitas ?? [])
+        setDenunciasAgente(data.denuncias ?? [])
       } catch (e) {
-        console.error("Erro ao tentar resolver agente_id/usuario_id:", e)
-        // fallback: usa o id do token mesmo
-        setAgenteId(tokenId)
+        console.error(e)
+        setErroAgenteDados(
+          "Erro ao carregar áreas de visita e denúncias do agente.",
+        )
+        setAreasAgente([])
+        setDenunciasAgente([])
+      } finally {
+        setLoadingAgenteDados(false)
       }
-
-      // 3) Agora usa o idParaAreas para áreas e denúncias
-      const { data } = await api.get<AreasDenunciasResponse>(
-        `/area_de_visita_denuncias/${idParaAreas}`,
-        { headers: { Authorization: `Bearer ${token}` } },
-      )
-
-      setAreasAgente(data.areas_de_visitas ?? [])
-      setDenunciasAgente(data.denuncias ?? [])
-    } catch (e) {
-      console.error(e)
-      setErroAgenteDados(
-        "Erro ao carregar áreas de visita e denúncias do agente.",
-      )
-      setAreasAgente([])
-      setDenunciasAgente([])
-    } finally {
-      setLoadingAgenteDados(false)
     }
-  }
 
-  carregar()
-}, [isAgente])
+    carregar()
+  }, [isAgente])
 
 
   const Header = ({
@@ -214,7 +215,11 @@ export default function PaginaListas() {
 
   return (
     <div className="bg-secondary min-h-screen w-full pt-2 flex flex-col gap-6 px-4 pb-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div
+        className={`grid gap-4 ${isAgente ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2"
+          }`}
+      >
+
         <Button
           className="h-20 w-full rounded-md px-5 font-medium text-white text-base md:text-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-sm "
           onClick={() => {

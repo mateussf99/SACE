@@ -25,6 +25,7 @@ import Tabela from "@/components/Tabelas/TabelaGenerica/Tabela"
 import TabelaFiltro, { type FiltroConfig } from "@/components/Tabelas/TabelaGenerica/Filtro"
 import TabelaPaginacao from "@/components/Tabelas/TabelaGenerica/Paginacao"
 import ModalDetalhes from "@/components/Tabelas/TabelaGenerica/Modal"
+import { toast } from "react-toastify"
 
 export interface Agente {
   usuario_id?: number
@@ -65,7 +66,6 @@ const SetorAtuacaoViewer = ({ label, value }: { label: string; value: any }) => 
 
   return (
     <div>
-      <strong>{label}:</strong>
       {lista.length ? (
         <ul className="list-disc ml-5">
           {lista.map((v, i) => (
@@ -87,6 +87,7 @@ const SetorAtuacaoViewer = ({ label, value }: { label: string; value: any }) => 
     </div>
   )
 }
+
 
 const SetorAtuacaoEditor = ({
   label,
@@ -263,7 +264,7 @@ function Index() {
         403: "Acesso proibido. Apenas supervisores podem deletar.",
         404: "Um ou mais agentes não foram encontrados.",
       }
-      alert(msg[e.response?.status] || "Erro interno do servidor.")
+      toast.error(msg[e?.response?.status] || "Erro interno do servidor.")
       throw e
     }
   }
@@ -355,30 +356,27 @@ function Index() {
     setor_de_atuacao: (args: any) => (
       <SetorAtuacaoViewer label={args.label} value={args.value} />
     ),
-    telefone_ddd: ({ data }: any) => {
+  telefone_ddd: ({ data }: any) => {
     const ddd = data?.telefone_ddd ?? ""
     const numero = data?.telefone_numero ?? ""
 
-    const temTelefone = (ddd && String(ddd).trim()) || (numero && String(numero).trim())
+    const temTelefone =
+      (ddd && String(ddd).trim()) || (numero && String(numero).trim())
 
-    return (
-      <div className="flex flex-col">
-        <strong>Telefone:</strong>
-        {temTelefone ? (
-          <span>
-            ({ddd}) {numero}
-          </span>
-        ) : (
-          <span>Não informado</span>
-        )}
-      </div>
+    // Aqui NÃO colocamos mais o <strong>Telefone:</strong>,
+    // só o valor mesmo. O label "Telefone:" vem de fora, do ModalDetalhes.
+    return temTelefone ? (
+      <span>
+        ({ddd}) {numero}
+      </span>
+    ) : (
+      <span>Não informado</span>
     )
   },
 
   telefone_numero: () => null,
 
-  }
-
+}
   const handleBeforeSubmitAgente = (payload: Partial<Agente>) => {
     const out: any = { ...payload }
 
@@ -506,7 +504,7 @@ function Index() {
                       console.error(e)
                     }
                   },
-                  "Deseja realmente excluir esta área?",
+                  "Deseja realmente excluir este agente?",
                 )
               }
             >
@@ -630,7 +628,6 @@ function Index() {
                 .rows.map(r =>r.original.agente_id!)
                 .filter(Boolean)
 
-              if (!ids.length) return alert("Selecione ao menos uma área.")
 
               confirmDelete(
                 async () => {
@@ -638,11 +635,12 @@ function Index() {
                     await deletarAreas(ids)
                     setData(p => p.filter(d => !ids.includes(d.agente_id!)))
                     table.toggleAllPageRowsSelected(false)
+                    toast.success("Agentes excluídos com sucesso.")
                   } catch (e) {
                     console.error(e)
                   }
                 },
-                `Deseja realmente excluir as ${ids.length} áreas selecionadas?`,
+                `Deseja realmente excluir os agentes selecionados?`,
               )
             }}
           >
@@ -663,7 +661,8 @@ function Index() {
     nome_completo: "Nome",
     registro_do_servidor: "Registro do Servidor",
     email: "E-mail",
-    telefone_ddd: "DDD",
+      telefone_ddd: "(DDD)-Telefone",
+
     telefone_numero: "Número de Telefone",
     estado: "Estado",
     municipio: "Município",
@@ -782,36 +781,27 @@ function Index() {
         customEditors={customEditors}
         sendAsJson={true}
         onBeforeSubmit={handleBeforeSubmitAgente}
-        renderField={(field, value) => {
-          const label = labels[field as keyof typeof labels] ?? field
+         renderField={(field, value) => {
+    const label = labels[field as keyof typeof labels] ?? field
 
-          if (field === "situacao_atual") {
-            return (
-              <div>
-                <strong>{label}:</strong> {value ? "Ativo" : "Desligado"}
-              </div>
-            )
-          }
+    if (field === "situacao_atual") {
+      return <span>{value ? "Ativo" : "Desligado"}</span>
+    }
 
-          if (field === "senha") {
-            return (
-              <div>
-                <strong>{label}:</strong> ••••
-              </div>
-            )
-          }
+    if (field === "senha") {
+      return <span>••••</span>
+    }
 
-          return (
-            <div className="flex flex-col">
-              <strong>{label}:</strong>
-              {value == null
-                ? "Não informado"
-                : Array.isArray(value)
-                ? value.join(", ")
-                : String(value)}
-            </div>
-          )
-        }}
+    return (
+      <>
+        {value == null
+          ? "Não informado"
+          : Array.isArray(value)
+          ? value.join(", ")
+          : String(value)}
+      </>
+    )
+  }}
 
         fieldsTwoColumns={[
           
