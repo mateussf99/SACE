@@ -50,7 +50,7 @@ export interface MapPanelProps {
 function ColorDot({ color }: { color: string }) {
   return (
     <span
-      className="inline-block size-2.5 translate-y-[-1px] rounded-sm ring-1 ring-black/5"
+      className="inline-block size-2 sm:size-2.5 translate-y-[-1px] rounded-sm ring-1 ring-black/5"
       style={{ backgroundColor: color }}
     />
   );
@@ -58,12 +58,12 @@ function ColorDot({ color }: { color: string }) {
 
 function LineItem({ dot, label, value }: { dot: string; label: string; value: number | string }) {
   return (
-    <div className="flex flex-col items-start gap-1">
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+    <div className="flex items-center gap-1">
+      <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
         <ColorDot color={dot} />
         <span>{label}</span>
       </div>
-      <span className="text-lg font-semibold tabular-nums">{value}</span>
+      <span className="text-base sm:text-lg font-semibold tabular-nums">{value}</span>
     </div>
   );
 }
@@ -77,18 +77,18 @@ function RisksLegend({
 }) {
   return (
     <div className="space-y-5">
-      <div className="space-y-3 gap-2 grid grid-cols-2">
-        <LineItem dot="#0b0b0b" label="Preta (Emergência)" value={risks.preta} />
-        <LineItem dot="#ef4444" label="Vermelha (Perigo)" value={risks.vermelha} />
-        <LineItem dot="#f59e0b" label="Laranja (Alerta)" value={risks.laranja} />
-        <LineItem dot="#facc15" label="Amarela (Atenção)" value={risks.amarela} />
+      <div className=" gap-2 grid grid-cols-2">
+        <LineItem dot="#0b0b0b" label="Emergência" value={risks.preta} />
+        <LineItem dot="#ef4444" label="Perigo" value={risks.vermelha} />
+        <LineItem dot="#f59e0b" label="Alerta" value={risks.laranja} />
+        <LineItem dot="#facc15" label="Atenção" value={risks.amarela} />
       </div>
 
-      <div className="flex-col border-t pt-5 justify-items-center">
-        <h2 className="font-bold text-blue-dark">
+      <div className="flex-col border-t pt-3 justify-items-center">
+        <h2 className="font-bold text-blue-dark text-xs sm:text-base">
           Total de casos por doença do município
         </h2>
-        <div className="grid grid-cols-3 gap-4 text-center">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
           <DiseaseStat label="Dengue" value={diseases.dengue} color="text-[#72777B]" icon={Dengue} />
           <DiseaseStat label="Chikungunya" value={diseases.chikungunya} color="text-[#72777B]" icon={Chikungunya} />
           <DiseaseStat label="Zika" value={diseases.zika} color="text-[#72777B]" icon={Zika} />
@@ -110,23 +110,23 @@ function DepositsLegend({
     subtitle: string,
     value: number
   ) => (
-    <div className="flex-col justify-items-center mb-4">
-      <div className="flex-col justify-items-center ">
+    <div className="flex-col justify-items-center  ">
+      <div className="flex-col justify-items-center">
         <div className="text-blue">
-          <img src={iconSrc} alt="" className="h-9 w-9" />
+          <img src={iconSrc} alt="" className="h-7 w-7 sm:h-8 sm:w-8" />
         </div>
-        <div className="flex-col justify-items-center ">
-          <div className="font-medium text-gray-600">{title}</div>
-          <div className="text-xs text-gray-600">{subtitle}</div>
+        <div className="flex-col justify-items-center">
+          <div className="font-medium text-gray-600 text-xs sm:text-sm">{title}</div>
+          <div className="text-[8px] md:text-xs text-gray-600">{subtitle}</div>
         </div>
       </div>
-      <div className="text-3xl font-semibold ">{value.toString().padStart(2, "0")}</div>
+      <div className="text-xl sm:text-2xl font-semibold">{value.toString().padStart(2, "0")}</div>
     </div>
   );
 
   return (
     <div className="space-y-4">
-      <div className=" grid grid-cols-3">
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
         {item(Caixa, "A1 e A2", "Armazen. de água", depositos.a1a2)}
         {item(Moveis, "B", "Depósitos móveis", depositos.b)}
         {item(Fixos, "C", "Depósitos fixos", depositos.c)}
@@ -151,9 +151,9 @@ function DiseaseStat({
 }) {
   return (
     <div className="space-y-1 text-center">
-      {icon && <img src={icon} alt={label} className="mx-auto h-9 w-9" />}
-      <div className={`text-sm ${color ?? "text-muted-foreground"}`}>{label}</div>
-      <div className="text-3xl font-bold tabular-nums">
+      {icon && <img src={icon} alt={label} className="mx-auto h-7 w-7 sm:h-9 sm:w-9" />}
+      <div className={`text-xs sm:text-sm ${color ?? "text-muted-foreground"}`}>{label}</div>
+      <div className="text-2xl sm:text-3xl font-bold tabular-nums">
         {value.toString().padStart(2, "0")}
       </div>
     </div>
@@ -243,10 +243,10 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   return (
     <div
       id="map-panel"
-      className={`absolute border-none left-3 top-15 md:top-15 xl:top-3 z-[1100] w-[320px] md:w-[360px] max-w-[92vw] transition-all duration-200 ${className}`}
+      className={`absolute border-none left-2 sm:left-3 top-15  md:top-15 z-[1100] w-[290px]  sm:w-[300px] md:w-[360px] lg:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
     >
       <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
-        <CardHeader className="gap-3">
+        <CardHeader className="gap-2 sm:gap-3">
           <div className="relative flex items-center gap-2">
             <div className="pointer-events-none absolute left-3 text-muted-foreground">
               <Search className="size-4" />
@@ -256,31 +256,32 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && triggerSearch()}
-              className="pl-9 pr-10 bg-focus border-none"
+              className="h-9 sm:h-10 text-sm sm:text-base pl-9 pr-10 bg-focus border-none"
             />
             <Button
               variant="ghost"
               size="icon"
               aria-label={expanded ? "Recolher" : "Expandir"}
               onClick={() => setExpanded((v) => !v)}
+              className="h-9 w-9 sm:h-10 sm:w-10"
             >
               {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
             </Button>
           </div>
 
           {expanded && (
-            <div className="flex gap-2 bg-secondary rounded-2xl">
+            <div className="flex gap-1 sm:gap-2 bg-secondary rounded-2xl">
               <Button
                 variant={tab === "risks" ? "dark" : "ghost"}
                 onClick={() => setTab("risks")}
-                className="flex-1 rounded-2xl"
+                className="flex-1 rounded-2xl text-xs sm:text-sm py-1.5 sm:py-2"
               >
                 Áreas de risco
               </Button>
               <Button
                 variant={tab === "deposits" ? "dark" : "ghost"}
                 onClick={() => setTab("deposits")}
-                className="flex-1 rounded-2xl"
+                className="flex-1 rounded-2xl text-xs sm:text-sm py-1.5 sm:py-2"
               >
                 Depósitos
               </Button>
@@ -289,7 +290,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
         </CardHeader>
 
         {expanded && (
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-4 sm:space-y-5">
             {tab === "risks" ? (
               <RisksLegend risks={risksData} diseases={diseasesData} />
             ) : (
