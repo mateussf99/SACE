@@ -374,6 +374,7 @@ function Index() {
         fieldLabels={fieldLabels}
         editableFields={["titulo", "descricao", "link_artigo", "imagem_nome"]}
         nomeDoCampo="imagem_nome"
+        imagePathTemplate="/artigo/img/:id" 
         sendAsJson={false}
         onBeforeSubmit={buildArtigoPayload}
         onSaved={handleArtigoSaved}

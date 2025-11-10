@@ -48,6 +48,7 @@ export type BackendRow = {
   ciclo?: { ano_de_criacao?: string }
   larvicidas?: { tipo?: string; forma?: string; quantidade?: number }[]
   adulticidas?: { tipo?: string; quantidade?: number }[]
+   arquivos?: { arquivo_id: number; arquivo_nome: string }[]
   [k: string]: any
 }
 
@@ -68,7 +69,9 @@ export const FIELD_LABELS: Record<string, string> = {
   a1: "A1", a2: "A2", b: "B", c: "C", d1: "D1", d2: "D2", e: "E",
   larvicidas: "Larvicidas aplicados", adulticidas: "Adulticidas aplicados",
   __label_atividades__: "Atividades realizadas", li: "LI", pe: "PE", t: "T", df: "DF", pve: "PVE",
+  arquivos: "Arquivos do registro",
 }
+const API_BASE = (api.defaults.baseURL || "").replace(/\/$/, "")
 
 
 const BOOL_ATIVIDADES = ["li", "pe", "t", "df", "pve"] as const
@@ -129,6 +132,8 @@ const buildRegistroCampoFormDataStrict = (raw: Record<string, any>): FormData =>
     fd.append(k as string, String(data[k] ?? ""))
   })
 
+  
+
   const isChangedArray = (arr: any) => Array.isArray(arr) && (arr as any).__changed === true
   if (isChangedArray(data.larvicidas)) {
     const arr = (data.larvicidas as any[]).map((x: any) => ({ tipo: String(x?.tipo ?? ""), ...(x?.forma ? { forma: String(x.forma) } : {}), quantidade: Number.isFinite(Number(x?.quantidade)) ? Number(x.quantidade) : 0 }))
@@ -141,6 +146,73 @@ const buildRegistroCampoFormDataStrict = (raw: Record<string, any>): FormData =>
   if (isChangedArray(data.files)) (data.files as File[]).forEach((f) => fd.append("files", f))
   return fd
 }
+
+function RegistroCampoArquivoImg({
+  arquivoId,
+  nome,
+}: {
+  arquivoId: number
+  nome: string
+}) {
+  const [src, setSrc] = useState<string | null>(null)
+  const [erro, setErro] = useState(false)
+
+  useEffect(() => {
+    let cancelado = false
+    let objectUrl: string | null = null
+
+    const fetchImg = async () => {
+      try {
+        const resp = await api.get(`/registro_de_campo/arquivo/${arquivoId}`, {
+          responseType: "blob",
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token") ?? ""}`,
+          },
+        })
+
+        objectUrl = URL.createObjectURL(resp.data)
+        if (!cancelado) {
+          setSrc(objectUrl)
+        }
+      } catch (e) {
+        console.error("Erro ao carregar imagem de registro de campo:", e)
+        if (!cancelado) setErro(true)
+      }
+    }
+
+    fetchImg()
+
+    return () => {
+      cancelado = true
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [arquivoId])
+
+  if (erro) {
+    return (
+      <div className="w-32 h-32 flex items-center justify-center text-[10px] text-red-600 border border-dashed border-red-300 rounded-md text-center px-1">
+        Erro ao carregar
+      </div>
+    )
+  }
+
+  if (!src) {
+    return (
+      <div className="w-32 h-32 flex items-center justify-center text-[10px] text-gray-500 border border-dashed border-gray-300 rounded-md text-center px-1">
+        Carregando...
+      </div>
+    )
+  }
+
+  return (
+    <img
+      src={src}
+      alt={nome}
+      className="w-32 h-32 object-cover rounded-md border border-blue-100"
+    />
+  )
+}
+
 
 /* =============== Viewers / Editors (iguais aos seus) =============== */
 const SectionLabel = (text: string) => (
@@ -215,6 +287,37 @@ const viewersRegistroCampo = {
             </li>
           ))}
         </ul>
+      </div>
+    )
+  },
+ arquivos: ({ value }: any) => {
+    const arr = Array.isArray(value) ? value : []
+
+    if (!arr.length) {
+      return (
+        <div>
+          <strong>Arquivos do registro:</strong>{" "}
+          <span className="text-sm text-gray-500">Nenhum arquivo enviado</span>
+        </div>
+      )
+    }
+
+    return (
+      <div className="flex flex-col gap-2">
+        <strong>Arquivos do registro:</strong>
+        <div className="flex flex-wrap gap-4 mt-2">
+          {arr.map((a: { arquivo_id: number; arquivo_nome: string }) => (
+            <div
+              key={a.arquivo_id}
+              className="flex flex-col items-start gap-1"
+            >
+              <RegistroCampoArquivoImg
+                arquivoId={a.arquivo_id}
+                nome={a.arquivo_nome}
+              />
+            </div>
+          ))}
+        </div>
       </div>
     )
   },
@@ -600,6 +703,7 @@ export default function RegistroTabela({
     "imovel_lado", "imovel_categoria_da_localidade", "formulario_tipo",
      "numero_da_amostra", "quantiade_tubitos",
     "__label_depositos__", ...DEPOSITOS, "larvicidas", "adulticidas",
+    "arquivos",
     "__label_atividades__", ...BOOL_ATIVIDADES,
     "observacao",
   ]
