@@ -4,8 +4,10 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Plus, Check, TriangleAlert, X } from "lucide-react";
+import { ChevronDown, Plus, Check, TriangleAlert, X, UserRound } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -166,10 +168,12 @@ function Index() {
   // Carrega anos/ciclos
   const fetchYearsCycles = useCallback(async () => {
     try {
-      const { data } = await api.get<Record<string, number[]>>("/anos_ciclos");
+      // Ajuste do tipo para arrays de números
+      const { data } = await api.get<Record<string, number[] | number>>("/anos_ciclos");
       const map: Record<number, number[]> = {};
-      Object.entries(data ?? {}).forEach(([y, cycles]) => {
-        map[Number(y)] = (cycles ?? []).slice().sort((a, b) => a - b);
+      Object.entries(data ?? {}).forEach(([y, rawCycles]) => {
+        const arr = Array.isArray(rawCycles) ? rawCycles : [rawCycles]; // normaliza
+        map[Number(y)] = arr.slice().sort((a: number, b: number) => a - b);
       });
 
       const sortedYears = Object.keys(map).map(Number).sort((a, b) => b - a);
@@ -179,7 +183,6 @@ function Index() {
       setYears(sortedYears);
       setLatestYear(ly);
 
-      // maior ano e maior ciclo como valores iniciais
       setYear(ly);
       const latestCycle = ly != null && map[ly]?.length ? Math.max(...map[ly]) : null;
       setCycle(latestCycle);
@@ -282,8 +285,23 @@ function Index() {
   };
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto] items-center bg-white shadow px-3 md:px-4 h-14 md:h-16 gap-2">
-      <div className="flex items-center shrink-0 md:w-[220px] lg:w-[260px] border-r border-gray-300 py-2 pr-4">
+    <div
+      className="
+        flex items-center flex-nowrap bg-white shadow
+        px-2 md:px-4 gap-2
+        h-16 py-0
+        overflow-x-auto
+        [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+      "
+    >
+      <div
+        className="
+          flex items-center shrink-0
+          md:w-[220px] lg:w-[260px]
+          md:border-r border-gray-300
+          pr-3 md:py-2 md:pr-4
+        "
+      >
         <Link to="/" className="flex-col justify-items-center">
           <h1 className="font-bold text-xl md:text-2xl text-blue leading-none">SACE</h1>
           <p className="hidden lg:block text-[11px] leading-none mt-1">
@@ -292,12 +310,24 @@ function Index() {
         </Link>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto whitespace-nowrap min-w-0  [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+      <div
+        className="
+          flex-1 min-w-0
+          flex items-center gap-1 sm:gap-2 md:gap-3
+          overflow-x-auto whitespace-nowrap
+          [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden
+        "
+      >
+        {/* Anos */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="outline"
-              className="text-blue-dark px-2 md:px-3 min-w-[96px] sm:min-w-[110px] md:min-w-[150px] flex items-center gap-1"
+              className="
+                text-blue-dark px-2 md:px-3
+                min-w-0 sm:min-w-[110px] md:min-w-[150px]
+                flex items-center gap-1
+              "
             >
               <p className="hidden lg:inline">
                 {selectedYear ? `Ano ${selectedYear}` : "Anos anteriores"}
@@ -326,7 +356,11 @@ function Index() {
             <Button
               variant="outline"
               disabled={cyclesForActiveYear.length === 0}
-              className="text-blue-dark px-2 md:px-3 min-w-[84px] sm:min-w-[96px] md:min-w-[110px] flex items-center gap-1 disabled:opacity-70"
+              className="
+                text-blue-dark px-2 md:px-3
+                min-w-0 sm:min-w-[96px] md:min-w-[110px]
+                flex items-center gap-1 disabled:opacity-70
+              "
             >
               <p>Ciclo {currentCycle ?? "-"}</p>
               <ChevronDown className="size-3 sm:size-4 ml-1 sm:ml-2 shrink-0" />
@@ -370,7 +404,7 @@ function Index() {
                   : "Finalizar ciclo ativo"
               }
             >
-              <Check className="size-4" />
+              <Check className="size-4 shrink-0" />
               <p className="hidden lg:inline ml-2">
                 {finalizeLoading ? "Finalizando..." : "Finalizar Ciclo"}
               </p>
@@ -395,7 +429,7 @@ function Index() {
                   : "Criar novo ciclo"
               }
             >
-              <Plus className="size-4" />
+              <Plus className="size-4 shrink-0" />
               <p className="hidden lg:inline ml-2">
                 {createLoading ? "Criando..." : "Criar Novo Ciclo"}
               </p>
@@ -435,18 +469,42 @@ function Index() {
       </div>
 
       {/* Usuário */}
-      <div className="flex items-center gap-2 shrink-0 md:w-[180px] lg:w-[200px] border-l border-gray-300 py-2 pl-4">
-        <div className="flex-1 text-right min-w-0">
-          <div className="text-sm text-blue-dark leading-tight max-w-[160px] md:max-w-none truncate">{fullName ?? user}</div>
-          <div className="text-xs font-semibold text-blue-dark leading-tight hidden sm:block">{accessLevel}</div>
+      <div
+        className="
+          flex items-center gap-2 shrink-0
+          md:border-l border-gray-300
+          md:py-2 md:pl-4
+        "
+      >
+        {/* Nome + nível visíveis em telas grandes */}
+        <div className="hidden xl:flex flex-col items-end leading-tight max-w-[180px]">
+          <span className="text-sm font-medium truncate">{fullName ?? user}</span>
+          <span className="text-[11px] font-semibold opacity-80 uppercase tracking-wide truncate">
+            {accessLevel}
+          </span>
         </div>
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="hover:bg-blue/10 text-blue-dark">
-              <ChevronDown />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hover:bg-blue/10 text-blue-dark"
+              aria-label="Abrir menu do usuário"
+            >
+              <UserRound className="size-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="z-[2000] text-blue-dark bg-white border-none font-medium">
+          <DropdownMenuContent
+            align="end"
+            className="z-[2000] text-blue-dark bg-white border-none font-medium min-w-[220px]"
+          >
+            <DropdownMenuLabel className="space-y-0.5 xl:hidden">
+              {/* Em telas pequenas continua aparecendo aqui */}
+              <div className="font-medium truncate">{fullName ?? user}</div>
+              <div className="text-xs font-semibold opacity-80 truncate">{accessLevel}</div>
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator className="xl:hidden" />
             <DropdownMenuItem onSelect={handleLogout}>Sair</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
