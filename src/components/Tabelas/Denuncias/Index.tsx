@@ -531,40 +531,46 @@ const isAgente = role.includes("agente")
 )
 
 
-  const handleDenunciaSaved = (updated: Denuncia) => {
-    if (!updated?.denuncia_id) return
+ const handleDenunciaSaved = (updated: Denuncia) => {
+  if (!updated?.denuncia_id) return
 
-    const idAgente =
-      updated.agente_responsavel_id != null
-        ? Number(updated.agente_responsavel_id)
-        : undefined
+  const idAgente =
+    updated.agente_responsavel_id != null
+      ? Number(updated.agente_responsavel_id)
+      : undefined
 
-    let agenteNome = "Não definido"
-    if (idAgente != null && !Number.isNaN(idAgente)) {
-      const found = agentesOptions.find(a => a.id === idAgente)
-      if (found) agenteNome = found.nome
-    }
-
-    setData(prev =>
-      prev.map(row =>
-        row.id === updated.denuncia_id
-          ? {
-              ...row,
-              agente: agenteNome,
-              agente_responsavel_id: idAgente ?? row.agente_responsavel_id,
-              status: updated.status ?? row.status,
-              tipo_imovel: updated.tipo_imovel ?? row.tipo_imovel,
-              endereco_completo:
-                updated.rua_avenida || updated.numero
-                  ? buildEndereco(updated.rua_avenida, updated.numero)
-                  : row.endereco_completo,
-              observacoes: updated.observacoes ?? row.observacoes,
-               arquivos: updated.arquivos ?? row.arquivos,
-            }
-          : row,
-      ),
-    )
+  let agenteNome = "Não definido"
+  if (idAgente != null && !Number.isNaN(idAgente)) {
+    const found = agentesOptions.find(a => a.id === idAgente)
+    if (found) agenteNome = found.nome
   }
+
+  setData(prev =>
+    prev.map(row => {
+      if (row.id !== updated.denuncia_id) return row
+
+      // Só troca arquivos se o updated tiver uma lista NÃO vazia.
+      let nextArquivos = row.arquivos
+      if (Array.isArray(updated.arquivos) && updated.arquivos.length > 0) {
+        nextArquivos = updated.arquivos
+      }
+
+      return {
+        ...row,
+        agente: agenteNome,
+        agente_responsavel_id: idAgente ?? row.agente_responsavel_id,
+        status: updated.status ?? row.status,
+        tipo_imovel: updated.tipo_imovel ?? row.tipo_imovel,
+        endereco_completo:
+          updated.rua_avenida || updated.numero
+            ? buildEndereco(updated.rua_avenida, updated.numero)
+            : row.endereco_completo,
+        observacoes: updated.observacoes ?? row.observacoes,
+        arquivos: nextArquivos,
+      }
+    }),
+  )
+}
 
   const customViewers = {
   agente_responsavel_id: (args: any) => {
