@@ -34,6 +34,7 @@ function Index() {
                   {l.to === "/" ? (
                     <>
                       <p>Mapa</p>
+                      <p className="hidden sm:inline"> interativo</p>
                       
                     </>
                   ) : (
