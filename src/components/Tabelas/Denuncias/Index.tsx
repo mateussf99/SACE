@@ -74,7 +74,7 @@ export type DenunciasTabelaProps = {
 
   disableOwnFetch?: boolean
 }
-const API_BASE = (api.defaults.baseURL || "").replace(/\/$/, "")
+
 
 const fieldLabels: Record<string, string> = {
   data_denuncia: "Data",

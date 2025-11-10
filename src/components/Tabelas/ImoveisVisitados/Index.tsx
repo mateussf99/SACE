@@ -71,7 +71,7 @@ export const FIELD_LABELS: Record<string, string> = {
   __label_atividades__: "Atividades realizadas", li: "LI", pe: "PE", t: "T", df: "DF", pve: "PVE",
   arquivos: "Arquivos do registro",
 }
-const API_BASE = (api.defaults.baseURL || "").replace(/\/$/, "")
+
 
 
 const BOOL_ATIVIDADES = ["li", "pe", "t", "df", "pve"] as const
