@@ -39,7 +39,7 @@ function ZonaCalor({
   cor = 'vermelha',
   lat,
   lon,
-  radiusMeters = 300, // raio padrão em metros
+  radiusMeters = 1000, // raio padrão em metros
 }: ZonaCalorProps) {
   const [open, setOpen] = useState(false)
   const { rgb, ring, label, icon } = colorMap[cor]
@@ -94,9 +94,9 @@ function ZonaCalor({
   }, [open])
 
   // Três círculos concêntricos para simular o gradiente
-  const r1 = radiusMeters * 0.35
-  const r2 = radiusMeters * 0.6
-  const r3 = radiusMeters * 0.75
+  const r1 = radiusMeters * 0.5
+  const r2 = radiusMeters * 0.7
+  const r3 = radiusMeters * 0.85
 
   return (
     <>
@@ -128,7 +128,7 @@ function ZonaCalor({
           pathOptions={{
             color: 'transparent',
             fillColor: `rgba(${rgb},0.55)`,
-            fillOpacity: 0.55,
+            fillOpacity: 0.70,
           }}
         />
         {/* Anel tracejado quando aberto */}
