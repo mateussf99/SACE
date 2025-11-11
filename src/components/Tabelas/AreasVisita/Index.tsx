@@ -186,7 +186,7 @@ export default function Index({
           res.data.agentes.map((a: any) => ({ label: a.nome_completo, value: a.agente_id })),
         ),
       )
-      .catch(err => console.error("Erro ao buscar agentes:", err))
+     // .catch(err => console.error("Erro ao buscar agentes:", err))
   }, [])
 
   useEffect(() => {
