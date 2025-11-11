@@ -119,7 +119,7 @@ export default function FormsDenunciaDialog({
       setCarregandoAgentes(true)
       const { data } = await api.get("/usuarios")
       const lista = Array.isArray(data?.agentes) ? data.agentes : []
-      // usa agente_id quando existir; fallback para usuario_id por segurança
+      
       setAgentes(
         lista
           .filter((a: any) => a?.nome_completo)
@@ -218,18 +218,25 @@ export default function FormsDenunciaDialog({
       }}
     >
       <DialogTrigger asChild>
-        <Button className="h-20 bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white text-xl border-none">
+        <Button className="h-20 min-w-[240px] whitespace-nowrap bg-gradient-to-r from-purple to-purple-dark hover:from-purple-dark hover:to-purple text-white text-xl border-none flex items-center gap-2">
           <ClipboardPlus className="!h-6 !w-6 shrink-0" />
           Cadastrar denúncias
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="bg-white border-none sm:max-w-[720px]" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
-        <DialogHeader>
+      
+
+      <DialogContent
+        className="z-50 bg-white border-none sm:max-w-[760px] w-[95vw] max-w-[95vw] p-0 max-h-[90vh] flex flex-col overflow-hidden rounded-lg shadow-xl"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+      >
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>Nova denúncia</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-6">
+        
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6">
           <section className="grid gap-4">
             <div>
               <h3 className="flex items-center gap-1 text-md font-medium text-blue-dark">
@@ -254,8 +261,8 @@ export default function FormsDenunciaDialog({
               />
             </div>
 
-            {/* Ajustado para 4 colunas: CEP, Número, Bairro, Tipo */}
-            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+            {/* Layout responsivo 1 / 2 / 4 colunas */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="cep" className="text-gray-500">
                   CEP
@@ -268,9 +275,7 @@ export default function FormsDenunciaDialog({
                   onChange={(e) => setCep(formatCep(e.target.value))}
                   onBlur={buscarCep}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.currentTarget.blur()
-                    }
+                    if (e.key === "Enter") e.currentTarget.blur()
                   }}
                 />
                 {buscandoCep && (
@@ -335,7 +340,6 @@ export default function FormsDenunciaDialog({
               />
             </div>
 
-            {/* NOVO: Agente responsável */}
             <div className="grid gap-2">
               <Label className="text-gray-500">Agente responsável</Label>
               <Select
@@ -363,7 +367,9 @@ export default function FormsDenunciaDialog({
           <section className="grid gap-4">
             <div className="flex items-center gap-1">
               <FileText className="h-4 w-4 text-blue-dark" />
-              <h3 className="text-md font-medium text-blue-dark">Evidência</h3>
+              <h3 className="text-md font-medium text-blue-dark whitespace-nowrap">
+                Evidência
+              </h3>
             </div>
 
             <div className="grid gap-2">
@@ -396,28 +402,36 @@ export default function FormsDenunciaDialog({
           </section>
         </div>
 
-        <DialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={() => setOpen(false)}
-          >
-            Cancelar
-          </Button>
-          <Button type="button" className="w-full bg-blue-dark text-white hover:bg-blue" onClick={handleFinalizar} disabled={enviando}>
-            {enviando ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Finalizar denúncia
-              </>
-            )}
-          </Button>
+        {/* Footer fixo fora da área rolável */}
+        <DialogFooter className="px-6 py-4 bg-white shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]">
+          <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full whitespace-nowrap"
+              onClick={() => setOpen(false)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="w-full bg-blue-dark text-white hover:bg-blue whitespace-nowrap"
+              onClick={handleFinalizar}
+              disabled={enviando}
+            >
+              {enviando ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Finalizar denúncia
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
