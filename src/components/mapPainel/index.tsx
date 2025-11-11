@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -170,8 +170,43 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
     if (typeof window === "undefined") return true; // fallback seguro
     return window.matchMedia("(min-width: 768px)").matches;
   });
+  const prevExpandedRef = useRef(expanded);
+  const collapsedByZoneRef = useRef(false);
+  const zoneOpenRef = useRef(false);               // controla se a zona está aberta
+  const closingZoneByPanelRef = useRef(false);     // flag: painel mandou fechar a zona
 
   const [summary, setSummary] = useState<DashboardSummary | null>(null); 
+
+  // Colapsa apenas em telas compactas (altura < 715 ou largura < 630) e restaura quando fechar
+  useEffect(() => {
+    const handler: EventListener = (e) => {
+      const ce = e as CustomEvent<{ open: boolean }>;
+      const isOpen = !!ce.detail?.open;
+      const isCompact =
+        typeof window !== "undefined" &&
+        (window.innerHeight < 715 || window.innerWidth < 630);
+
+      zoneOpenRef.current = isOpen;
+
+      if (isOpen) {
+        prevExpandedRef.current = expanded;
+        if (isCompact) {
+          collapsedByZoneRef.current = true;
+          setExpanded(false);
+        }
+      } else {
+        if (collapsedByZoneRef.current) {
+          if (!closingZoneByPanelRef.current) {
+            setExpanded(prevExpandedRef.current ?? true);
+          }
+        }
+        collapsedByZoneRef.current = false;
+        closingZoneByPanelRef.current = false;
+      }
+    };
+    window.addEventListener("zone-info", handler);
+    return () => window.removeEventListener("zone-info", handler);
+  }, [expanded]);
 
   // Notifica mudanças de layout para reposicionar o dialog ancorado da zona de calor
   useEffect(() => {
@@ -241,10 +276,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   };
 
   return (
-    <div
-      id="map-panel"
-      className={`absolute border-none left-4 top-15  md:top-15 z-[1100] w-[290px] md:w-[300px]  2xl:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
-    >
+    <div id="map-panel" className={`absolute border-none left-4 top-15  md:top-15 z-[1100] w-[290px] md:w-[300px]  2xl:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}>
       <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
         <CardHeader className="gap-2 sm:gap-3">
           <div className="relative flex items-center gap-2">
@@ -262,7 +294,19 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
               variant="ghost"
               size="icon"
               aria-label={expanded ? "Recolher" : "Expandir"}
-              onClick={() => setExpanded((v) => !v)}
+              onClick={() => {
+                const next = !expanded;
+                const isCompact =
+                  typeof window !== "undefined" &&
+                  (window.innerHeight < 715 || window.innerWidth < 630);
+
+                // Se vamos expandir e a zona está aberta em tela compacta, fecha a zona primeiro
+                if (next && isCompact && zoneOpenRef.current) {
+                  closingZoneByPanelRef.current = true;
+                  window.dispatchEvent(new Event("close-zone-info"));
+                }
+                setExpanded(next);
+              }}
               className="h-9 w-9 sm:h-10 sm:w-10"
             >
               {expanded ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}

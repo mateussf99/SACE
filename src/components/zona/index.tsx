@@ -98,6 +98,18 @@ function ZonaCalor({
   const r2 = radiusMeters * 0.7
   const r3 = radiusMeters * 0.85
 
+  useEffect(() => {
+    // informa ao painel que o diálogo abriu/fechou
+    window.dispatchEvent(new CustomEvent('zone-info', { detail: { open } }))
+  }, [open])
+
+  // permite que o painel feche os informes quando necessário (telas < 715)
+  useEffect(() => {
+    const onClose: EventListener = () => setOpen(false)
+    window.addEventListener('close-zone-info', onClose)
+    return () => window.removeEventListener('close-zone-info', onClose)
+  }, [])
+
   return (
     <>
       <FeatureGroup eventHandlers={{ click: () => setOpen(true) }}>
