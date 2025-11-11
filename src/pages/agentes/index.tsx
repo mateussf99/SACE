@@ -121,6 +121,7 @@ useEffect(() => {
   const payload = decodeJwtPayload<JwtPayload>(token)
   const tokenId = coerceNum(payload?.agente_id)
 
+
   if (tokenId == null) {
 
     setErroAgenteDados("ID do agente não encontrado no token.")
