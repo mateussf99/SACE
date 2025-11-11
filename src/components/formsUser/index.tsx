@@ -47,7 +47,6 @@ const UFS = [
   "PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO"
 ]
 
-
 function onlyDigits(v: string) {
   return (v || "").replace(/\D/g, "")
 }
@@ -59,7 +58,7 @@ function formatCpf(v: string) {
   return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`
 }
 function formatPhone(v: string) {
-  const d = onlyDigits(v).slice(0, 9) // 8 ou 9 dígitos sem DDD
+  const d = onlyDigits(v).slice(0, 9)
   if (d.length <= 4) return d
   if (d.length === 8) return `${d.slice(0,4)}-${d.slice(4)}`
   return `${d.slice(0,5)}-${d.slice(5)}`
@@ -93,8 +92,8 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
   const [senha, setSenha] = useState<string>("")
   const [confirmarSenha, setConfirmarSenha] = useState<string>("")
   const [situacaoAtual, setSituacaoAtual] = useState<boolean>(true)
-  const [registroServidor, setRegistroServidor] = useState<string>("") // novo
-  const [dataAdmissao, setDataAdmissao] = useState<string>("")         // novo
+  const [registroServidor, setRegistroServidor] = useState<string>("")
+  const [dataAdmissao, setDataAdmissao] = useState<string>("")
 
   // Setores (via API)
   const [setorOptions, setSetorOptions] = useState<SetorApi[]>([])
@@ -150,8 +149,8 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
     setSetoresSelecionados([])
     setSetorTempId("")
     setSituacaoAtual(true)
-    setRegistroServidor("")   // novo
-    setDataAdmissao("")       // novo
+    setRegistroServidor("")
+    setDataAdmissao("")
     // foco no primeiro campo
     setTimeout(() => nomeRef.current?.focus(), 0)
   }
@@ -170,8 +169,8 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
     if (!logradouro.trim()) return "Informe o logradouro."
     if (!numero.trim()) return "Informe o número."
     if (!funcao) return "Selecione a função."
-    if (!registroServidor.trim()) return "Informe o registro do servidor."   // novo
-    if (!dataAdmissao) return "Informe a data de admissão."                  // novo
+    if (!registroServidor.trim()) return "Informe o registro do servidor."
+    if (!dataAdmissao) return "Informe a data de admissão."
     if (senha.length < 6) return "A senha deve ter pelo menos 6 caracteres."
     if (senha !== confirmarSenha) return "As senhas não coincidem."
     if (setoresSelecionados.length === 0) return "Selecione pelo menos um setor de atuação."
@@ -217,8 +216,8 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
       senha,
       setorAtuacao: setoresSelecionados,
       situacaoAtual,
-      registroServidor: registroServidor.trim(), // novo
-      dataAdmissao,                              // novo
+      registroServidor: registroServidor.trim(),
+      dataAdmissao,
     }
     setUsuarios((prev) => [novo, ...prev])
     resetForm({ keepUf: true, keepFuncao: false })
@@ -257,7 +256,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
         cargo: u.funcao === "AGENTE" ? "Agente de Endemias" : "Supervisor",
         situacao_atual: u.situacaoAtual,
         data_de_admissao: u.dataAdmissao || new Date().toISOString().slice(0, 10),
-        setor_de_atuacao: setoresIds, // array de IDs
+        setor_de_atuacao: setoresIds,
         senha: u.senha,
         nivel_de_acesso: u.funcao === "AGENTE" ? "agente" : "supervisor",
       }
@@ -295,167 +294,171 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
       </DialogTrigger>
 
       <DialogContent
-        className="bg-white border-none sm:max-w-[900px] w-[95vw] max-h-[90vh] overflow-hidden flex flex-col"
+        className="z-50 bg-white border-none sm:max-w-[760px] w-[95vw] max-w-[95vw] p-0 max-h-[90vh] flex flex-col overflow-hidden rounded-lg shadow-xl"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>Cadastrar novo usuário</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2 flex-1 overflow-y-auto p-1">
-          <div className="text-md font-medium text-blue-dark">Dados pessoais</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="sm:col-span-2">
-              <Label className="text-gray-500" htmlFor="nome">Nome completo</Label>
-              <Input
-                id="nome"
-                placeholder="Digite o nome do usuário"
-                className="bg-secondary border-none text-blue-dark"
-                value={nome}
-                onChange={(e) => setNome(e.target.value)}
-                ref={nomeRef}
-              />
-            </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="cpf">CPF</Label>
-              <Input
-                id="cpf"
-                placeholder="000.000.000-00"
-                inputMode="numeric"
-                maxLength={14}
-                className="bg-secondary border-none text-blue-dark"
-                value={formatCpf(cpf)}
-                onChange={(e) => setCpf(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="rg">RG</Label>
-              <Input
-                id="rg"
-                placeholder="00000000-0"
-                className="bg-secondary border-none text-blue-dark"
-                value={rg}
-                onChange={(e) => setRg(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="nascimento">Data de nascimento</Label>
-              <Input
-                id="nascimento"
-                type="date"
-                placeholder="DD/MM/AAAA"
-                className="bg-secondary border-none text-blue-dark"
-                value={nascimento}
-                onChange={(e) => setNascimento(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="text-md font-medium text-blue-dark">Dados de contato</div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <Label className="text-gray-500" htmlFor="email">E-mail</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="usuario@email.com"
-                className="bg-secondary border-none text-blue-dark"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="grid grid-cols-3 gap-2">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6">
+          <section className="grid gap-4">
+            <div className="text-md font-medium text-blue-dark">Dados pessoais</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="sm:col-span-2">
+                <Label className="text-gray-500" htmlFor="nome">Nome completo</Label>
+                <Input
+                  id="nome"
+                  placeholder="Digite o nome do usuário"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  ref={nomeRef}
+                />
+              </div>
               <div>
-                <Label className="text-gray-500" htmlFor="ddd">Telefone (DDD)</Label>
+                <Label className="text-gray-500" htmlFor="cpf">CPF</Label>
                 <Input
-                  id="ddd"
-                  placeholder="DD"
+                  id="cpf"
+                  placeholder="000.000.000-00"
                   inputMode="numeric"
-                  maxLength={2}
+                  maxLength={14}
                   className="bg-secondary border-none text-blue-dark"
-                  value={onlyDigits(ddd).slice(0,2)}
-                  onChange={(e) => setDdd(e.target.value)}
+                  value={formatCpf(cpf)}
+                  onChange={(e) => setCpf(e.target.value)}
                 />
               </div>
-              <div className="col-span-2">
-                <Label className="text-gray-500" htmlFor="telefone">Celular</Label>
+              <div>
+                <Label className="text-gray-500" htmlFor="rg">RG</Label>
                 <Input
-                  id="telefone"
-                  placeholder="91234-5678"
-                  inputMode="numeric"
-                  maxLength={10}
+                  id="rg"
+                  placeholder="00000000-0"
                   className="bg-secondary border-none text-blue-dark"
-                  value={formatPhone(telefone)}
-                  onChange={(e) => setTelefone(e.target.value)}
+                  value={rg}
+                  onChange={(e) => setRg(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="nascimento">Data de nascimento</Label>
+                <Input
+                  id="nascimento"
+                  type="date"
+                  placeholder="DD/MM/AAAA"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={nascimento}
+                  onChange={(e) => setNascimento(e.target.value)}
                 />
               </div>
             </div>
-          </div>
+          </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div>
-              <Label className="text-gray-500">Estado</Label>
-              <Select value={uf} onValueChange={setUf}>
-                <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
-                  <SelectValue placeholder="UF" />
-                </SelectTrigger>
-                <SelectContent className="bg-white border-none">
-                  {UFS.map((u) => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <section className="grid gap-4">
+            <div className="text-md font-medium text-blue-dark">Dados de contato</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <Label className="text-gray-500" htmlFor="email">E-mail</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="usuario@email.com"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-gray-500" htmlFor="ddd">Telefone (DDD)</Label>
+                  <Input
+                    id="ddd"
+                    placeholder="DD"
+                    inputMode="numeric"
+                    maxLength={2}
+                    className="bg-secondary border-none text-blue-dark"
+                    value={onlyDigits(ddd).slice(0,2)}
+                    onChange={(e) => setDdd(e.target.value)}
+                  />
+                </div>
+                <div className="col-span-2">
+                  <Label className="text-gray-500" htmlFor="telefone">Celular</Label>
+                  <Input
+                    id="telefone"
+                    placeholder="91234-5678"
+                    inputMode="numeric"
+                    maxLength={10}
+                    className="bg-secondary border-none text-blue-dark"
+                    value={formatPhone(telefone)}
+                    onChange={(e) => setTelefone(e.target.value)}
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="municipio">Município</Label>
-              <Input
-                id="municipio"
-                placeholder="Digite o município"
-                className="bg-secondary border-none text-blue-dark"
-                value={municipio}
-                onChange={(e) => setMunicipio(e.target.value)}
-              />
-            </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="bairro">Bairro</Label>
-              <Input
-                id="bairro"
-                placeholder="Digite o bairro"
-                className="bg-secondary border-none text-blue-dark"
-                value={bairro}
-                onChange={(e) => setBairro(e.target.value)}
-              />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-            <div className="sm:col-span-2">
-              <Label className="text-gray-500" htmlFor="logradouro">Logradouro</Label>
-              <Input
-                id="logradouro"
-                placeholder="Rua do Sol"
-                className="bg-secondary border-none text-blue-dark"
-                value={logradouro}
-                onChange={(e) => setLogradouro(e.target.value)}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <Label className="text-gray-500">Estado</Label>
+                <Select value={uf} onValueChange={setUf}>
+                  <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
+                    <SelectValue placeholder="UF" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none">
+                    {UFS.map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="municipio">Município</Label>
+                <Input
+                  id="municipio"
+                  placeholder="Digite o município"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={municipio}
+                  onChange={(e) => setMunicipio(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="bairro">Bairro</Label>
+                <Input
+                  id="bairro"
+                  placeholder="Digite o bairro"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="numero">Número</Label>
-              <Input
-                id="numero"
-                placeholder="000"
-                className="bg-secondary border-none text-blue-dark"
-                value={numero}
-                onChange={(e) => setNumero(e.target.value)}
-              />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="sm:col-span-2">
+                <Label className="text-gray-500" htmlFor="logradouro">Logradouro</Label>
+                <Input
+                  id="logradouro"
+                  placeholder="Rua do Sol"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={logradouro}
+                  onChange={(e) => setLogradouro(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-gray-500" htmlFor="numero">Número</Label>
+                <Input
+                  id="numero"
+                  placeholder="000"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={numero}
+                  onChange={(e) => setNumero(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          </section>
 
+          <section className="grid gap-4">
+            <div className="text-md font-medium text-blue-dark">Dados profissionais</div>
 
-          <div className="text-md font-medium text-blue-dark">Dados profissionais</div>
-          <div className="">
-            <div>
+            <div className="grid gap-2">
               <Label className="text-gray-500">Função</Label>
               <Select value={funcao} onValueChange={(v) => setFuncao(v as "AGENTE" | "SUPERVISOR")}>
                 <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
@@ -468,8 +471,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
               </Select>
             </div>
 
-            {/* Situação */}
-            <div className="mt-2">
+            <div className="grid gap-2">
               <Label className="text-gray-500">Situação</Label>
               <Select value={situacaoAtual ? "true" : "false"} onValueChange={(v) => setSituacaoAtual(v === "true")}>
                 <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
@@ -482,8 +484,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
               </Select>
             </div>
 
-            {/* Registro e Admissão */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label className="text-gray-500" htmlFor="registro_servidor">Registro do servidor</Label>
                 <Input
@@ -506,8 +507,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
               </div>
             </div>
 
-            {/* Senhas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
                 <Label className="text-gray-500" htmlFor="senha">Senha</Label>
                 <Input
@@ -532,10 +532,9 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
               </div>
             </div>
 
-            {/* Setor de atuação (via API) */}
-            <div className="mt-3">
+            <div className="grid gap-2">
               <Label className="text-gray-500">Setor de atuação</Label>
-              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2 mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-[1fr_auto] gap-2">
                 <Select value={setorTempId} onValueChange={setSetorTempId} disabled={carregandoSetores}>
                   <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
                     <SelectValue placeholder={carregandoSetores ? "Carregando setores..." : "Selecione o setor"} />
@@ -558,7 +557,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
               </div>
 
               {setoresSelecionados.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="flex flex-wrap gap-2">
                   {setoresSelecionados.map((s) => (
                     <Badge key={s.area_de_visita_id} variant="secondary" className="flex items-center gap-2">
                       {s.setor}
@@ -575,75 +574,79 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
                 </div>
               )}
             </div>
-          </div>
+          </section>
 
-          <div className="text-md font-medium text-blue-dark">Usuários adicionados</div>
-          <div className="rounded-md border-none">
-            <ScrollArea className="bg-secondary border-none h-40">
-              {usuarios.length === 0 ? (
-                <div className="flex h-40 border-none rounded-md items-center justify-center text-md text-muted-foreground">
-                  Nenhum usuário adicionado.
-                </div>
-              ) : (
-                <ul className="divide-y">
-                  {usuarios.map((u) => (
-                    <li key={u.id} className="flex items-start gap-3 p-3">
-                      <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                      <div className="flex-1 text-md">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-medium">{u.nome}</span>
-                          <Badge variant="secondary">{u.email}</Badge>
-                          <Badge variant="outline">{u.cpf}</Badge>
-                          <Badge variant="secondary">{`(${u.ddd}) ${u.telefone}`}</Badge>
-                          <Badge variant="outline">{u.funcao === "AGENTE" ? "Agente" : "Supervisor"}</Badge>
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {u.logradouro}, {u.numero} — {u.bairro} — {u.municipio}/{u.uf}
-                        </div>
-                        {u.setorAtuacao?.length > 0 && (
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Setor(es): {u.setorAtuacao.map((s) => s.setor).join(", ")}
+          <section className="grid gap-4">
+            <div className="text-md font-medium text-blue-dark">Usuários adicionados</div>
+            <div className="rounded-md border-none">
+              <ScrollArea className="bg-secondary border-none h-40">
+                {usuarios.length === 0 ? (
+                  <div className="flex h-40 border-none rounded-md items-center justify-center text-md text-muted-foreground">
+                    Nenhum usuário adicionado.
+                  </div>
+                ) : (
+                  <ul className="divide-y">
+                    {usuarios.map((u) => (
+                      <li key={u.id} className="flex items-start gap-3 p-3">
+                        <User className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <div className="flex-1 text-md">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-medium">{u.nome}</span>
+                            <Badge variant="secondary">{u.email}</Badge>
+                            <Badge variant="outline">{u.cpf}</Badge>
+                            <Badge variant="secondary">{`(${u.ddd}) ${u.telefone}`}</Badge>
+                            <Badge variant="outline">{u.funcao === "AGENTE" ? "Agente" : "Supervisor"}</Badge>
                           </div>
-                        )}
-                      </div>
-                      <Button variant="ghost" size="icon" onClick={() => handleRemove(u.id)} aria-label="Remover">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </ScrollArea>
-          </div>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {u.logradouro}, {u.numero} — {u.bairro} — {u.municipio}/{u.uf}
+                          </div>
+                          {u.setorAtuacao?.length > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Setor(es): {u.setorAtuacao.map((s) => s.setor).join(", ")}
+                            </div>
+                          )}
+                        </div>
+                        <Button variant="ghost" size="icon" onClick={() => handleRemove(u.id)} aria-label="Remover">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </ScrollArea>
+            </div>
+          </section>
         </div>
 
-        <DialogFooter className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button
-            type="button"
-            onClick={handleAddUsuario}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Cadastrar novo usuário
-          </Button>
-          <Button
-            type="button"
-            onClick={handleFinalizar}
-            disabled={enviando || usuarios.length === 0}
-            className="w-full"
-          >
-            {enviando ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Finalizar cadastro
-              </>
-            )}
-          </Button>
+        <DialogFooter className="px-6 py-4 bg-white shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]">
+          <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              onClick={handleAddUsuario}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Cadastrar novo usuário
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinalizar}
+              disabled={enviando || usuarios.length === 0}
+              className="w-full"
+            >
+              {enviando ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Finalizar cadastro
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

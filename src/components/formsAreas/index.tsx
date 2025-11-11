@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import api from "@/services/api" // <- adiciona o cliente HTTP
+import api from "@/services/api"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 type Endereco = {
@@ -157,31 +157,34 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
   }
 
   return (
-    <Dialog  open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
-            variant="default"
-            className="h-20 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none"
+          variant="default"
+          className="h-20 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none"
         >
-            <Plus  className="!h-6 !w-6 shrink-0" />
-            Cadastrar áreas de visita
+          <Plus className="!h-6 !w-6 shrink-0" />
+          Cadastrar áreas de visita
         </Button>
       </DialogTrigger>
 
       <DialogContent
-        className="bg-white border-none sm:max-w-[660px] "
-        onInteractOutside={(e) => e.preventDefault()} 
-        onEscapeKeyDown={(e) => e.preventDefault()}   
+        className="z-50 bg-white border-none w-[95vw] max-w-[95vw] sm:max-w-[760px] p-0 max-h-[90vh] flex flex-col overflow-hidden rounded-lg shadow-xl"
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>Cadastrar áreas de visita</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-4 py-2">
-          {/* CEP */}
-          <div className="grid gap-2">
-            <Label className="text-blue-dark" htmlFor="cep">Informe o CEP para facilitar a busca pelos endereços de visita</Label>
-            <div className="relative">
+        {/* Corpo rolável */}
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6">
+          <section className="grid gap-4">
+            {/* CEP */}
+            <div className="grid gap-2">
+              <Label className="text-blue-dark" htmlFor="cep">
+                Informe o CEP para facilitar a busca pelos endereços de visita
+              </Label>
               <Input
                 id="cep"
                 placeholder="00000-000"
@@ -191,154 +194,153 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
                 maxLength={9}
                 className="bg-secondary pr-10 border-none text-blue-dark"
               />
-              
             </div>
-          </div>
 
-          {/* Setor + Quarteirão */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div>
-              <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
-              <Input
-                id="setor"
-                placeholder="Ex.: Setor A 01"
-                className="bg-secondary border-none text-blue-dark w-full"
-                value={setorId}
-                onChange={(e) => setSetorId(e.target.value)}
-              />
+            {/* Setor + Quarteirão */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid gap-2">
+                <Label className="text-gray-500" htmlFor="setor">Identificador do setor</Label>
+                <Input
+                  id="setor"
+                  placeholder="Ex.: Setor A 01"
+                  className="bg-secondary border-none text-blue-dark w-full"
+                  value={setorId}
+                  onChange={(e) => setSetorId(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-gray-500" htmlFor="quarteirao">Nº Quarteirão</Label>
+                <Input
+                  id="numero_quarteirao"
+                  placeholder="001"
+                  className="bg-secondary border-none text-blue-dark w-full"
+                  value={quarteirao}
+                  onChange={(e) => setQuarteirao(e.target.value)}
+                />
+              </div>
             </div>
-            <div>
-              <Label className="text-gray-500" htmlFor="quarteirao">Nº Quarteirão</Label>
-              <Input
-                id="numero_quarteirao"
-                placeholder="001"
-                className="bg-secondary border-none text-blue-dark w-full"
-                value={quarteirao}
-                onChange={(e) => setQuarteirao(e.target.value)}
-              />
-            </div>
-          </div>
 
-          {/* UF + Município + Bairro */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div>
-                    <Label className="text-gray-500">Estado</Label>
-                    <Select value={uf} onValueChange={setUf}>
-                        <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
-                        <SelectValue placeholder="UF" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-white border-none">
-                        {UFS.map((u) => (
-                            <SelectItem key={u} value={u}>{u}</SelectItem>
-                        ))}
-                        </SelectContent>
-                    </Select>
-                </div>
-                <div className="">
-                    <Label className="text-gray-500" htmlFor="municipio">Município</Label>
-                    <Input
-                        id="municipio"
-                        placeholder="Município"
-                        className="bg-secondary border-none text-blue-dark"
-                        value={municipio}
-                        onChange={(e) => setMunicipio(e.target.value)}
-                    />
-                </div>
-                <div className="gap-2">
-                    <Label className="text-gray-500" htmlFor="bairro">Bairro</Label>
-                    <Input
-                    id="bairro"
-                    placeholder="Bairro"
-                    className="bg-secondary border-none text-blue-dark"
-                    value={bairro}
-                    onChange={(e) => setBairro(e.target.value)}
-                    />
-                </div>
-          </div>
-
-          
-          
-          {/* Logradouro */}
-          <div className="grid gap-2">
-            <Label className="text-gray-500" htmlFor="logradouro">Logradouro</Label>
-            <Input
-              id="logradouro"
-              placeholder="Logradouro"
-              className="bg-secondary border-none text-blue-dark"
-              value={logradouro}
-              onChange={(e) => setLogradouro(e.target.value)}
-            />
-          </div>
-
-          {/* Lista de Endereços cadastrados */}
-          <div className="grid gap-2">
-            <Label className="text-gray-500">Endereços cadastrados</Label>
-            <div className="rounded-md border-none">
-              <ScrollArea  className="bg-secondary border-none h-40">
-                {enderecos.length === 0 ? (
-                  <div className="flex h-40 border-none rounded-md texte-blue-dark items-center justify-center text-sm text-muted-foreground">
-                    Nenhum endereço cadastrado.
-                  </div>
-                ) : (
-                  <ul className="divide-y">
-                    {enderecos.map((e) => (
-                      <li key={e.id} className="flex items-start gap-3 p-3">
-                        <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
-                        <div className="flex-1 text-sm">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-medium">{e.logradouro}</span>
-                            <Badge variant="secondary">{e.bairro}</Badge>
-                            <Badge variant="outline">{e.municipio}/{e.uf}</Badge>
-                            <Badge variant="secondary">{e.cep}</Badge>
-                          </div>
-                          <div className="text-xs text-muted-foreground mt-1">
-                            Setor: {e.setorId} • Qrt.: {e.quarteirao}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleRemove(e.id)}
-                          aria-label="Remover"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </li>
+            {/* UF + Município + Bairro */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="grid gap-2">
+                <Label className="text-gray-500">Estado</Label>
+                <Select value={uf} onValueChange={setUf}>
+                  <SelectTrigger className="bg-secondary w-full border-none text-blue-dark">
+                    <SelectValue placeholder="UF" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border-none">
+                    {UFS.map((u) => (
+                      <SelectItem key={u} value={u}>{u}</SelectItem>
                     ))}
-                  </ul>
-                )}
-              </ScrollArea>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-gray-500" htmlFor="municipio">Município</Label>
+                <Input
+                  id="municipio"
+                  placeholder="Município"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={municipio}
+                  onChange={(e) => setMunicipio(e.target.value)}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label className="text-gray-500" htmlFor="bairro">Bairro</Label>
+                <Input
+                  id="bairro"
+                  placeholder="Bairro"
+                  className="bg-secondary border-none text-blue-dark"
+                  value={bairro}
+                  onChange={(e) => setBairro(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+
+            {/* Logradouro */}
+            <div className="grid gap-2">
+              <Label className="text-gray-500" htmlFor="logradouro">Logradouro</Label>
+              <Input
+                id="logradouro"
+                placeholder="Logradouro"
+                className="bg-secondary border-none text-blue-dark"
+                value={logradouro}
+                onChange={(e) => setLogradouro(e.target.value)}
+              />
+            </div>
+
+            {/* Lista de Endereços */}
+            <div className="grid gap-2">
+              <Label className="text-gray-500">Endereços cadastrados</Label>
+              <div className="rounded-md">
+                <ScrollArea className="bg-secondary border-none h-40">
+                  {enderecos.length === 0 ? (
+                    <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
+                      Nenhum endereço cadastrado.
+                    </div>
+                  ) : (
+                    <ul className="divide-y">
+                      {enderecos.map((e) => (
+                        <li key={e.id} className="flex items-start gap-3 p-3">
+                          <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                          <div className="flex-1 text-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-medium">{e.logradouro}</span>
+                              <Badge variant="secondary">{e.bairro}</Badge>
+                              <Badge variant="outline">{e.municipio}/{e.uf}</Badge>
+                              <Badge variant="secondary">{e.cep}</Badge>
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              Setor: {e.setorId} • Qrt.: {e.quarteirao}
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemove(e.id)}
+                            aria-label="Remover"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </ScrollArea>
+              </div>
+            </div>
+          </section>
         </div>
 
-        <DialogFooter className="w-full grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Button
-            type="button"
-            onClick={handleAddEndereco}
-            className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Cadastrar novo endereço
-          </Button>
-          <Button
-            type="button"
-            onClick={handleFinalizar}
-            disabled={enviando || enderecos.length === 0}
-            className="w-full "
-          >
-            {enviando ? (
-              <>
-                <Loader2 className=" mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Finalizar cadastro
-              </>
-            )}
-          </Button>
+        <DialogFooter className="px-6 py-4 bg-white shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]">
+          <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              onClick={handleAddEndereco}
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Cadastrar novo endereço
+            </Button>
+            <Button
+              type="button"
+              onClick={handleFinalizar}
+              disabled={enviando || enderecos.length === 0}
+              className="w-full"
+            >
+              {enviando ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Finalizar cadastro
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
