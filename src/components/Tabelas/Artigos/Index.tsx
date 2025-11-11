@@ -73,7 +73,7 @@ const formatArtigoToRow = (a: Artigo): RowData => ({
   descricao: a.descricao ?? "Não informado",
   supervisor: a.supervisor_nome ?? "Não informado",
   data: a.data_criacao
-  ? format(new Date(a.data_criacao), "dd/MM/yyyy HH:mm")
+  ? format(new Date(a.data_criacao), "dd/MM/yyyy")
   : "Não informado",
 
   link: a.link_artigo ?? "",
@@ -386,7 +386,7 @@ function Index() {
         onSaved={handleArtigoSaved}
         renderField={(field, value) => {
             if (field === "data_criacao" && value) {
-    return <span>{format(new Date(value), "dd/MM/yyyy HH:mm")}</span>
+    return <span>{format(new Date(value), "dd/MM/yyyy")}</span>
   }
   if (field === "link_artigo" && value) {
     return (

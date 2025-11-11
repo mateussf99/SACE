@@ -251,7 +251,6 @@ const AcoesCell = ({
           <button
             className="p-1 hover:text-green-700"
             onClick={() => {
-              console.log("Clicou na denúncia:", id)
               onEdit(id)
               setOpen(false)
             }}
@@ -344,7 +343,6 @@ const isAgente = role.includes("agente")
         headers: { Authorization: `Bearer ${localStorage.getItem("token") ?? ""}` },
       })
       .then(res => {
-        console.log("🔍 RESPOSTA DA API /usuarios:", res.data)
         setAgentesOptions(
           res.data.agentes.map((a: any) => ({
             id: a.agente_id,
@@ -352,7 +350,7 @@ const isAgente = role.includes("agente")
           })),
         )
       })
-      .catch(err => console.error("❌ ERRO /usuarios:", err))
+
   }, [])
 
   useEffect(() => {
