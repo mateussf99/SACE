@@ -85,7 +85,7 @@ function RisksLegend({
       </div>
 
       <div className="flex-col border-t pt-3 justify-items-center">
-        <h2 className="font-bold text-blue-dark text-xs sm:text-base">
+        <h2 className="font-bold text-blue-dark text-xs 2xl:text-base">
           Total de casos por doença do município
         </h2>
         <div className="grid grid-cols-3 gap-3 sm:gap-4 text-center">
@@ -116,8 +116,8 @@ function DepositsLegend({
           <img src={iconSrc} alt="" className="h-7 w-7 sm:h-8 sm:w-8" />
         </div>
         <div className="flex-col justify-items-center">
-          <div className="font-medium text-gray-600 text-xs sm:text-sm">{title}</div>
-          <div className="text-[8px] md:text-xs text-gray-600">{subtitle}</div>
+          <div className="font-medium text-gray-600 text-xs 2xl:text-sm">{title}</div>
+          <div className="text-[8px] 2xl:text-xs text-gray-600">{subtitle}</div>
         </div>
       </div>
       <div className="text-xl sm:text-2xl font-semibold">{value.toString().padStart(2, "0")}</div>
@@ -243,7 +243,7 @@ export default function MapPanel({ className = "", onSearch }: MapPanelProps) {
   return (
     <div
       id="map-panel"
-      className={`absolute border-none left-4 top-15  md:top-15 z-[1100] w-[290px]  sm:w-[300px] md:w-[360px] lg:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
+      className={`absolute border-none left-4 top-15  md:top-15 z-[1100] w-[290px] md:w-[300px]  2xl:w-[400px] max-w-[92vw] transition-all duration-200 ${className}`}
     >
       <Card className="rounded-2xl bg-white border-none shadow-md backdrop-blur supports-[backdrop-filter]:bg-background/90">
         <CardHeader className="gap-2 sm:gap-3">

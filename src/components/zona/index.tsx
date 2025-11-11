@@ -165,36 +165,36 @@ function ZonaCalor({
               </button>
 
               <div className="space-y-1 border-l-4 p-1.5 md:p-2" style={{ borderLeftColor: ring }}>
-                <h2 id={headingId} className="flex items-center gap-2 text-base text-md md:text-lg font-semibold">
+                <h2 id={headingId} className="flex items-center gap-2 text-base  2xl:text-lg font-semibold">
                   {icon}
                   {titulo ?? label}
                 </h2>
-                <p className="text-[10px] md:text-sm text-muted-foreground">{computedDescricao}</p>
+                <p className="text-[10px] 2xl:text-sm text-muted-foreground">{computedDescricao}</p>
               </div>
 
               <div className="mt-2 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
                 <div className='flex gap-2 grid-cols-1 md:grid-cols-2 md:col-span-3'>
                   <div className="flex-col p-2 md:p-2 ">
                     <p className="text-[11px] sm:text-xs text-muted-foreground">Casos confirmados</p>
-                    <p className="font-semibold text-sm md:text-base">{casosConfirmados}</p>
+                    <p className="font-semibold text-sm 2xl:text-base">{casosConfirmados}</p>
                   </div>
                   <div className="flex-col p-2 md:p-2 md:col-span-2">
                     <p className="text-[11px] sm:text-xs text-muted-foreground">Focos encontrados</p>
-                    <p className="font-semibold text-sm md:text-base">{focosEncontrados}</p>
+                    <p className="font-semibold text-sm 2xl:text-base">{focosEncontrados}</p>
                   </div>
                 </div>
                 <div className='flex gap-2 grid-cols-1 md:grid-cols-3 md:col-span-3'>
                   <div className="flex-col p-2 md:p-3 ">
                     <p className="text-[11px] sm:text-xs text-muted-foreground">Casos de Dengue</p>
-                    <p className="font-semibold text-sm md:text-base">{casosDengue ?? 0}</p>
+                    <p className="font-semibold text-sm 2xl:text-base">{casosDengue ?? 0}</p>
                   </div>
                   <div className="flex-col p-2 md:p-3 ">
                     <p className="text-[11px] sm:text-xs text-muted-foreground">Casos de Zika</p>
-                    <p className="font-semibold text-sm md:text-base">{casosZika ?? 0}</p>
+                    <p className="font-semibold text-sm 2xl:text-base">{casosZika ?? 0}</p>
                   </div>
                   <div className="flex-col p-2 md:p-3 ">
                     <p className="text-[11px] sm:text-xs text-muted-foreground">Casos de Chikungunya</p>
-                    <p className="font-semibold text-sm md:text-base">{casosChikungunya ?? 0}</p>
+                    <p className="font-semibold text- 2xl:text-base">{casosChikungunya ?? 0}</p>
                   </div>
                 </div>
               </div>
