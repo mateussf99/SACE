@@ -83,22 +83,22 @@ export default function FormsArtigoDialog({ defaultOpen, onFinish }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="h-20   bg-gradient-to-r from-white to-white hover:from-white hover:to-gray-400 text-blue-darck text-xl  ">
+        <Button className="h-20 bg-gradient-to-r from-white to-white hover:from-white hover:to-gray-400 text-blue-dark text-xl">
           <SquareChartGantt className="!h-6 !w-6 shrink-0" />
           Cadastrar artigo
         </Button>
       </DialogTrigger>
 
       <DialogContent
-        className="bg-white border-none sm:max-w-[720px]"
+        className="z-50 bg-white border-none sm:max-w-[760px] w-[95vw] max-w-[95vw] p-0 max-h-[90vh] flex flex-col overflow-hidden rounded-lg shadow-xl"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
-        <DialogHeader>
+        <DialogHeader className="px-6 pt-6">
           <DialogTitle>Novo artigo</DialogTitle>
         </DialogHeader>
 
-        <div className="grid gap-6">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-4 space-y-6">
           <section className="grid gap-4">
             <div>
               <h3 className="flex items-center gap-1 text-md font-medium text-blue-dark">
@@ -168,28 +168,30 @@ export default function FormsArtigoDialog({ defaultOpen, onFinish }: Props) {
           </section>
         </div>
 
-        <DialogFooter className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-4">
-          <Button type="button" variant="outline" className="w-full" onClick={() => setOpen(false)}>
-            Cancelar
-          </Button>
-          <Button
-            type="button"
-            className="w-full bg-blue-dark text-white hover:bg-blue"
-            onClick={handleFinalizar}
-            disabled={enviando}
-          >
-            {enviando ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enviando...
-              </>
-            ) : (
-              <>
-                <Check className="mr-2 h-4 w-4" />
-                Publicar artigo
-              </>
-            )}
-          </Button>
+        <DialogFooter className="px-6 py-4 bg-white shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]">
+          <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="w-full" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              className="w-full bg-blue-dark text-white hover:bg-blue"
+              onClick={handleFinalizar}
+              disabled={enviando}
+            >
+              {enviando ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Publicar artigo
+                </>
+              )}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
