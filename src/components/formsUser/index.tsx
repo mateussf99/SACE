@@ -171,7 +171,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
     if (!funcao) return "Selecione a função."
     if (!registroServidor.trim()) return "Informe o registro do servidor."
     if (!dataAdmissao) return "Informe a data de admissão."
-    if (senha.length < 6) return "A senha deve ter pelo menos 6 caracteres."
+    if (senha.length < 9) return "A senha deve ter pelo menos 9 caracteres."
     if (senha !== confirmarSenha) return "As senhas não coincidem."
     if (setoresSelecionados.length === 0) return "Selecione pelo menos um setor de atuação."
     return null
@@ -513,7 +513,8 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
                 <Input
                   id="senha"
                   type="password"
-                  placeholder="Digite a senha"
+                  minLength={9}
+                  placeholder="Digite a senha (mín. 9 caracteres)"
                   className="bg-secondary border-none text-blue-dark"
                   value={senha}
                   onChange={(e) => setSenha(e.target.value)}
@@ -524,6 +525,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
                 <Input
                   id="confirmar_senha"
                   type="password"
+                  minLength={9}
                   placeholder="Repita a senha"
                   className="bg-secondary border-none text-blue-dark"
                   value={confirmarSenha}

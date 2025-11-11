@@ -53,7 +53,7 @@ function index() {
                 <Input 
                   id="username"
                   type="text" 
-                  placeholder="admin" 
+                  placeholder="111.222.333-44" 
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="border rounded-md p-2 focus:border-0  focus:outline-none focus:ring-2 focus:ring-blue"
