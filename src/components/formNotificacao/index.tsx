@@ -85,7 +85,7 @@ export default function FormNotificacaoDialog({ defaultOpen = false, onFinish }:
         <Button
               variant='default'
               size='lg'
-              className='w-full h-15 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none'
+              className='w-full h-15 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-md border-none'
               aria-label='Enviar notificações para a população'
             >
               <BellPlus className=' !h-6 !w-6 shrink-0' />

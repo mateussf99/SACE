@@ -161,7 +161,7 @@ export default function FormsAreasDialog({ defaultOpen, onFinish }: Props) {
       <DialogTrigger asChild>
         <Button
           variant="default"
-          className="h-20 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-xl border-none"
+          className="h-20 bg-gradient-to-r from-blue to-blue-dark hover:from-blue-dark hover:to-blue text-white text-md border-none"
         >
           <Plus className="!h-6 !w-6 shrink-0" />
           Cadastrar áreas de visita

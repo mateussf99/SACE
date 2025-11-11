@@ -17,7 +17,6 @@ import { Trash2, Edit2, Plus, Save, X, Loader2 } from "lucide-react"
 import { usePeriod } from "@/contexts/PeriodContext"
 import { Card } from "../ui/card"
 
-
 type DoencaConfirmada = {
   doente_confirmado_id: number
   nome?: string
@@ -253,7 +252,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
       .filter(n => n.tipo_da_doenca && n.rua)
 
     if (!payload.length) {
-      toast.error("Preencha ao menos um registro com 'tipo_da_doenca' e 'rua'.")
+      alert("Preencha ao menos um registro com 'tipo_da_doenca' e 'rua'.")
       return
     }
 
@@ -267,7 +266,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
           Authorization: `Bearer ${token}`,
         },
       })
-       toast.success(data?.message ?? "Registros criados com sucesso.")
+      alert(data?.message ?? "Registros criados com sucesso.")
 
       let areas: AreaDeVisita[] = []
       try {
@@ -382,7 +381,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
       bairro: editando.bairro.trim(),
     }
     if (!payload.tipo_da_doenca || !payload.rua) {
-      toast.error("Campos 'tipo_da_doenca' e 'rua' são obrigatórios.")
+      alert("Campos 'tipo_da_doenca' e 'rua' são obrigatórios.")
       return
     }
 
@@ -410,8 +409,7 @@ export default function DoencasConfirmadasModal({ open, onOpenChange }: Props) {
         403: "Apenas supervisores podem atualizar registros.",
         404: "Registro não encontrado.",
       }
-       toast.error(msg[status] || "Erro ao atualizar registro.")
-
+      alert(msg[status] || "Erro ao atualizar registro.")
     } finally {
       setSalvandoEdicao(false)
     }

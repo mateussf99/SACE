@@ -286,7 +286,7 @@ export default function FormsUser({ defaultOpen /*, onFinish*/ }: Props) {
       <DialogTrigger asChild>
         <Button
           variant="default"
-          className="h-20 bg-gradient-to-r from-orange to-orange-dark hover:from-orange-dark hover:to-orange text-white text-xl border-none"
+          className="h-20 bg-gradient-to-r from-orange to-orange-dark hover:from-orange-dark hover:to-orange text-white text-md border-none"
         >
           <ClipboardList className="!h-6 !w-6 shrink-0" />
           Cadastrar novo usuário
