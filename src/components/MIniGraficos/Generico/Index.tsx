@@ -136,7 +136,7 @@ export default function Index({
 
             {!showPercentage && (
               <span
-                className="px-1.5 py-0.5 rounded-full text-sm md:text-xs max-[400px]:text-[8px] font-semibold flex items-center gap-0.5"
+                className="px-1.5 py-0.5 rounded-full text-sm md:text-xs lg:text-base max-[400px]:text-[8px] font-semibold flex items-center gap-0.5"
                 style={{ backgroundColor: badgeColor, color: bgColor ? "white" : mainColor }}
               >
                 {badgeLabel && <span>{badgeLabel}</span>}
@@ -151,7 +151,7 @@ export default function Index({
           </div>
         </div>
 
-        <div className="w-14 h-8 sm:w-20 md:w-18 md:h-10 xl:w-26 xl:h-14">
+        <div className="w-14 h-8 sm:w-20 md:w-18 md:h-10 xl:w-28 xl:h-16">
           <ResponsiveContainer width="100%" height="100%">
             {hasGraphData ? (
               <LineChart data={safeData}>
@@ -187,9 +187,9 @@ export default function Index({
       </CardHeader>
 
       <CardContent className="p-0">
-        <div className="flex justify-between text-[10px] sm:text-xs md:text-sm lg:text-base">
+        <div className="flex justify-between text-[10px] sm:text-xs md:text-sm lg:text-base ">
           <span className="text-muted-foreground">Dados do último ciclo:</span>
-          <span className="font-medium" style={{ color: bgColor ? "white" : mainColor }}>
+          <span className="font-medium md:text-lg  lg:text-2xl" style={{ color: bgColor ? "white" : mainColor }}>
             {formatValue(safePrevious)}
           </span>
         </div>

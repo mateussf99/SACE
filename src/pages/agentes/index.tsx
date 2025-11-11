@@ -111,84 +111,55 @@ export default function PaginaListas() {
     }
   }
 
-  useEffect(() => {
-    if (!isAgente) return
+useEffect(() => {
+  if (!isAgente) return
 
-    const token =
-      typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
-    if (!token) return
+  const token =
+    typeof window !== "undefined" ? localStorage.getItem("auth_token") : null
+  if (!token) return
 
-    const payload = decodeJwtPayload<JwtPayload>(token)
-    const tokenId = coerceNum(payload?.agente_id)
-    if (tokenId == null) return
+  const payload = decodeJwtPayload<JwtPayload>(token)
+  const tokenId = coerceNum(payload?.agente_id)
 
-    const carregar = async () => {
-      setLoadingAgenteDados(true)
-      setErroAgenteDados(null)
 
-      try {
-        let idParaAreas = tokenId
+  if (tokenId == null) {
 
-        try {
-          // 1) Buscar todos os agentes
-          const { data: usuariosResp } = await api.get("/usuarios", {
-            headers: { Authorization: `Bearer ${token}` },
-          })
+    setErroAgenteDados("ID do agente não encontrado no token.")
+    return
+  }
 
-          const agentes = Array.isArray(usuariosResp.agentes)
-            ? usuariosResp.agentes
-            : []
+  const carregar = async () => {
+    setLoadingAgenteDados(true)
+    setErroAgenteDados(null)
 
-          // 2) Achar o agente logado pelo id do token
-          const agenteLogado = agentes.find(
-            (a: any) =>
-              a.agente_id === tokenId || a.usuario_id === tokenId,
-          )
+    try {
 
-          if (agenteLogado) {
-            // Se o tokenId bate com usuario_id, provavelmente o back
-            // está usando agente_id nas áreas → corrigimos aqui
-            if (
-              agenteLogado.usuario_id === tokenId &&
-              agenteLogado.agente_id != null
-            ) {
-              idParaAreas = agenteLogado.agente_id
-            }
+      setAgenteId(tokenId)
 
-            // Guardar o agente_id real para outros usos (ex: ConfirmarCasosModal)
-            setAgenteId(agenteLogado.agente_id ?? tokenId)
-          } else {
-            // fallback se não encontrar nada
-            setAgenteId(tokenId)
-          }
-        } catch (e) {
-          console.error("Erro ao tentar resolver agente_id/usuario_id:", e)
-          // fallback: usa o id do token mesmo
-          setAgenteId(tokenId)
-        }
+      const { data } = await api.get<AreasDenunciasResponse>(
+        `/area_de_visita_denuncias/${tokenId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      )
 
-        // 3) Agora usa o idParaAreas para áreas e denúncias
-        const { data } = await api.get<AreasDenunciasResponse>(
-          `/area_de_visita_denuncias/${idParaAreas}`,
-          { headers: { Authorization: `Bearer ${token}` } },
-        )
-
-        setAreasAgente(data.areas_de_visitas ?? [])
-        setDenunciasAgente(data.denuncias ?? [])
-      } catch (e) {
-        console.error(e)
-        setErroAgenteDados(
-          "Erro ao carregar áreas de visita e denúncias do agente.",
-        )
-        setAreasAgente([])
-        setDenunciasAgente([])
-      } finally {
-        setLoadingAgenteDados(false)
-      }
+      setAreasAgente(data.areas_de_visitas ?? [])
+      setDenunciasAgente(data.denuncias ?? [])
+    } catch (e) {
+      console.error(e)
+      setErroAgenteDados(
+        "Erro ao carregar áreas de visita e denúncias do agente.",
+      )
+      setAreasAgente([])
+      setDenunciasAgente([])
+    } finally {
+      setLoadingAgenteDados(false)
     }
+  }
 
-    carregar()
-  }, [isAgente])
+  carregar()
+}, [isAgente])
+
 
 
   const Header = ({

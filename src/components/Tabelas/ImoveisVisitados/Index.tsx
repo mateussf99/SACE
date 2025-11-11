@@ -55,8 +55,8 @@ export type BackendRow = {
 
 
 const STATUS_LABEL: Record<string, string> = {
-  inspecionado: "Inspecionado", tratado: "Tratado", bloqueado: "Bloqueado",
-  fechado: "Fechado", recusado: "Recusado", visitado: "Visitado", nao_inspecionado: "Não visitado"
+  inspecionado: "Inspecionado", bloqueado: "Bloqueado",
+  fechado: "Fechado", recusado: "Recusado", nao_inspecionado: "Não visitado"
 }
 export const FIELD_LABELS: Record<string, string> = {
   registro_de_campo_id: "ID do Registro", area_de_visita: "Área de Visita",
@@ -626,7 +626,6 @@ export default function RegistroTabela({
         const s = STATUS_LABEL[raw] ?? raw
         const cls =
           s === "Inspecionado" ? "bg-green-100 text-green-700 border border-green-700" :
-            s === "Visitado" ? "bg-lime-100 text-lime-800 border border-lime-800" :
               s === "Bloqueado" ? "bg-blue-100 text-blue-800 border border-blue-800" :
                 s === "Fechado" ? "bg-yellow-100 text-yellow-700 border border-yellow-700" :
                   s === "Recusado" || s === "Não visitado" ? "bg-red-100 text-red-700 border border-red-700" :

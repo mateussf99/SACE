@@ -296,7 +296,7 @@ function Index() {
 
         setSetoresOptions(Array.from(mapa.values()))
       } catch (err) {
-        console.error("Erro ao buscar setores:", err)
+       // console.error("Erro ao buscar setores:", err)
       }
     }
     fetchSetores()
