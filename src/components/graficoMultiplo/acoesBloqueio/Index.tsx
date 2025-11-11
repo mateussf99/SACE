@@ -56,9 +56,9 @@ export default function GraficoCiclosUnificado() {
     async function fetchAll() {
       setLoading(true)
       try {
-        const [casos, acoes, depositos] = await Promise.all([
+        const [casos, depositos] = await Promise.all([
           fetchGrafico(`/grafico/casos_por_ciclo/${anoSelecionado}`),
-          fetchGrafico(`/grafico/acoes_bloqueio/${anoSelecionado}`),
+          //fetchGrafico(`/grafico/acoes_bloqueio/${anoSelecionado}`),
           fetchGrafico(`/grafico/depositos_por_ciclo/${anoSelecionado}`)
         ])
 
@@ -70,13 +70,13 @@ export default function GraficoCiclosUnificado() {
             dataInicial: casos.dataPorCiclo,
             configInicial: casos.config,
           },
-          {
-            id: "acoes",
-            title: "Ações de Bloqueio",
-            label: "Ações de bloqueio",
-            dataInicial: acoes.dataPorCiclo,
-            configInicial: acoes.config,
-          },
+          // {
+          //   id: "acoes",
+          //   title: "Ações de Bloqueio",
+          //   label: "Ações de bloqueio",
+          //   dataInicial: acoes.dataPorCiclo,
+          //   configInicial: acoes.config,
+          // },
           {
             id: "depositos",
             title: "Depósitos por Ciclo",
