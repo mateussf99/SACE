@@ -188,7 +188,6 @@ export default function FormsDenunciaDialog({
     formData.append("hora_denuncia", hora_denuncia)
     if (complemento) formData.append("endereco_complemento", complemento)
     files.forEach((file) => formData.append("files", file))
-    // agente responsável
     formData.append("agente_responsavel_id", String(form.agenteResponsavelId))
 
     try {
@@ -261,7 +260,6 @@ export default function FormsDenunciaDialog({
               />
             </div>
 
-            {/* Layout responsivo 1 / 2 / 4 colunas */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div className="grid gap-2">
                 <Label htmlFor="cep" className="text-gray-500">
@@ -402,7 +400,6 @@ export default function FormsDenunciaDialog({
           </section>
         </div>
 
-        {/* Footer fixo fora da área rolável */}
         <DialogFooter className="px-6 py-4 bg-white shadow-[0_-2px_8px_-2px_rgba(0,0,0,0.05)]">
           <div className="grid w-full grid-cols-1 sm:grid-cols-2 gap-3">
             <Button
